@@ -462,9 +462,9 @@ const FirstComponent = ({
   // ); // Selected values in autocomplete
 
   return (
-    <Box>
-      <Grid container spacing={2} sx={{ mt: 2 }}>
-        <Grid size={12}>
+    <Box sx={{ width: "100%" }}>
+      <Grid container columnSpacing={2} rowSpacing={1.25} sx={{ mt: 0.5 }}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <CustomTextField
             fullWidth
             size="small"
@@ -475,7 +475,7 @@ const FirstComponent = ({
           />
         </Grid>
 
-        <Grid size={12}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth size="small" sx={commonStyles}>
             <InputLabel>Activity type</InputLabel>
             <Select
@@ -493,7 +493,7 @@ const FirstComponent = ({
           </FormControl>
         </Grid>
 
-        <Grid size={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           {/* <Datepicker
             controls={["calendar", "time"]}
             display="center"
@@ -530,7 +530,7 @@ const FirstComponent = ({
             />
           </LocalizationProvider>
         </Grid>
-        <Grid size={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           {/* <Datepicker
             controls={["calendar", "time"]}
             display="center"
@@ -555,7 +555,7 @@ const FirstComponent = ({
             />
           </LocalizationProvider>
         </Grid>
-        <Grid size={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <FormControl fullWidth size="small">
             <InputLabel
               id="demo-simple-select-standard-label"
@@ -597,8 +597,12 @@ const FirstComponent = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid
+          size={{ xs: 12, sm: 6 }}
+          sx={{ display: "flex", alignItems: "center", minHeight: 40 }}
+        >
           <FormControlLabel
+            sx={{ m: 0 }}
             control={
               <Checkbox
                 checked={formData.Banner}
@@ -608,16 +612,12 @@ const FirstComponent = ({
             label="Banner/Timeless"
           />
         </Grid>
-        <Grid size={12}>
-          <ContactField
-            formData={formData} // Use formData
-            handleInputChange={handleInputChange}
-            ZOHO={ZOHO}
-            selectedRowData={selectedRowData}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid
+          size={{ xs: 12, sm: 6 }}
+          sx={{ display: "flex", alignItems: "center", minHeight: 40 }}
+        >
           <FormControlLabel
+            sx={{ m: 0 }}
             control={
               <Checkbox
                 checked={!sendNotification}
@@ -634,7 +634,15 @@ const FirstComponent = ({
             label="Don't send notification"
           />
         </Grid>
-        <Grid size={12}>
+        <Grid size={{ xs: 12, sm: 6 }}>
+          <ContactField
+            formData={formData} // Use formData
+            handleInputChange={handleInputChange}
+            ZOHO={ZOHO}
+            selectedRowData={selectedRowData}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <AccountField
             formData={formData} // Use formData
             handleInputChange={handleInputChange}
@@ -642,14 +650,14 @@ const FirstComponent = ({
             selectedRowData={selectedRowData}
           />
         </Grid>
-        <Grid size={12}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <RegardingField
             formData={formData}
             handleInputChange={handleInputChange}
             picklistConfig={picklistConfig}
           />
         </Grid>
-        <Grid size={12}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <FormControl fullWidth size="small" sx={commonStyles}>
             <Autocomplete
               id="schedule-for-autocomplete"
@@ -680,7 +688,7 @@ const FirstComponent = ({
             />
           </FormControl>
         </Grid>
-        <Grid size={3}>
+        <Grid size={{ xs: 12, sm: 3 }}>
           <FormControl fullWidth size="small" sx={commonStyles}>
             <InputLabel>Priority</InputLabel>
             <Select
@@ -695,7 +703,7 @@ const FirstComponent = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid size={3}>
+        <Grid size={{ xs: 12, sm: 3 }}>
           <FormControl fullWidth size="small" sx={commonStyles}>
             <InputLabel>Reminder</InputLabel>
             <Select
@@ -720,7 +728,7 @@ const FirstComponent = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid size={6}>
+        <Grid size={{ xs: 12, sm: 6 }}>
           <CustomTextField
             fullWidth
             size="small"
@@ -730,9 +738,16 @@ const FirstComponent = ({
             onChange={(e) => handleInputChange("Venue", e.target.value)}
           />
         </Grid>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={8}>
+        <Grid
+          size={12}
+          container
+          columnSpacing={2}
+          rowSpacing={1}
+          alignItems="center"
+        >
+          <Grid size={{ xs: 12, sm: 8 }}>
             <FormControlLabel
+              sx={{ m: 0 }}
               control={
                 <Checkbox
                   checked={formData.Create_Separate_Event_For_Each_Contact}
@@ -749,7 +764,12 @@ const FirstComponent = ({
             />
           </Grid>
 
-          <Grid item xs={6} sm={4} md={2} display="flex" alignItems="center">
+          <Grid
+            size={{ xs: 12, sm: 4 }}
+            display="flex"
+            alignItems="center"
+            justifyContent={{ sm: "flex-end" }}
+          >
             <Typography variant="body1" sx={{ mr: 1 }}>
               Colour:
             </Typography>
