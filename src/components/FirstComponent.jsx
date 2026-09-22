@@ -23,6 +23,12 @@ import CustomColorPicker from "./atom/CustomColorPicker";
 import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import {
+  getDurationOptionsFromConfig,
+  getRegardingOptionsFromConfig,
+  getTypeResourceFromConfig,
+  getTypeOptionsFromConfig,
+} from "../services/picklistConfigService";
 
 const parseDateString = (dateString) => {
   const [datePart, timePart, ampm] = dateString.split(" "); // Split date and time
@@ -102,28 +108,42 @@ const FirstComponent = ({
   selectedRowData,
   ZOHO,
   isEditMode, // New prop to check if it's edit mode
+  picklistConfig,
 }) => {
   const { events, filterDate, setFilterDate, recentColors, setRecentColor } =
     useContext(ZohoContext);
 
-  const [activityType] = useState([
-    { type: "Meeting", resource: 1 },
-    { type: "To-Do", resource: 2 },
-    { type: "Appointment", resource: 3 },
-    { type: "Boardroom", resource: 4 },
-    { type: "Call Billing", resource: 5 },
-    { type: "Email Billing", resource: 6 },
-    { type: "Initial Consultation", resource: 7 },
-    { type: "Call", resource: 8 },
-    { type: "Mail", resource: 9 },
-    { type: "Meeting Billing", resource: 10 },
-    { type: "Personal Activity", resource: 11 },
-    { type: "Room 1", resource: 12 },
-    { type: "Room 2", resource: 13 },
-    { type: "Room 3", resource: 14 },
-    { type: "To Do Billing", resource: 15 },
-    { type: "Vacation", resource: 16 },
-  ]);
+  const activityType = React.useMemo(
+    () =>
+      getTypeOptionsFromConfig(
+        picklistConfig,
+        isEditMode ? formData.Type_of_Activity : null
+      ).map((type, index) => ({
+        type,
+        resource: getTypeResourceFromConfig(type, picklistConfig, index + 1),
+      })),
+    [formData.Type_of_Activity, isEditMode, picklistConfig]
+  );
+
+  React.useEffect(() => {
+    if (
+      isEditMode ||
+      picklistConfig?._source !== "custom_module" ||
+      !activityType.length ||
+      activityType.some((item) => item.type === formData.Type_of_Activity)
+    ) {
+      return;
+    }
+
+    const firstActivity = activityType[0];
+    handleInputChange("Type_of_Activity", firstActivity.type);
+    handleInputChange("resource", firstActivity.resource);
+    const regardingOptions = getRegardingOptionsFromConfig(
+      firstActivity.type,
+      picklistConfig
+    );
+    handleInputChange("Regarding", regardingOptions[0] || "");
+  }, [activityType, formData.Type_of_Activity, handleInputChange, isEditMode, picklistConfig]);
 
   function addMinutesToDateTime(formatType, durationInMinutes) {
     // // Create a new Date object using the start time from formData
@@ -273,6 +293,11 @@ const FirstComponent = ({
     if (selectedActivity) {
       handleInputChange("Type_of_Activity", selectedActivity.type);
       handleInputChange("resource", selectedActivity.resource);
+      const regardingOptions = getRegardingOptionsFromConfig(
+        selectedActivity.type,
+        picklistConfig
+      );
+      handleInputChange("Regarding", regardingOptions[0] || "");
     }
   };
 
@@ -367,10 +392,50 @@ const FirstComponent = ({
     },
   };
 
-  const durations = Array.from({ length: 24 }, (_, i) => (i + 1) * 10);
-
   const [startValue, setStartValue] = useState(dayjs(formData.start));
   const [endValue, setEndValue] = useState(dayjs(formData.end));
+
+  const durations = React.useMemo(
+    () =>
+      getDurationOptionsFromConfig(
+        picklistConfig,
+        isEditMode ? formData.Duration_Min : null
+      ),
+    [formData.Duration_Min, isEditMode, picklistConfig]
+  );
+
+  React.useEffect(() => {
+    if (
+      isEditMode ||
+      picklistConfig?._source !== "custom_module" ||
+      !durations.length ||
+      durations.some(
+        (duration) => Number(duration) === Number(formData.Duration_Min)
+      )
+    ) {
+      return;
+    }
+
+    const startDate = new Date(formData.start);
+    if (!formData.start || Number.isNaN(startDate.getTime())) return;
+
+    handleInputChange("Duration_Min", durations[0]);
+    const newEndDate = new Date(startDate);
+    newEndDate.setMinutes(newEndDate.getMinutes() + Number(durations[0]));
+    const localEndDate = new Date(
+      newEndDate.getTime() - newEndDate.getTimezoneOffset() * 60000
+    );
+    const formattedEndDate = localEndDate.toISOString().slice(0, 16);
+    handleInputChange("end", formattedEndDate);
+    setEndValue(dayjs(formattedEndDate));
+  }, [
+    durations,
+    formData.Duration_Min,
+    formData.start,
+    handleInputChange,
+    isEditMode,
+    picklistConfig,
+  ]);
 
   function getTimeDifference(end) {
     const startDate = new Date(formData.start);
@@ -581,6 +646,7 @@ const FirstComponent = ({
           <RegardingField
             formData={formData}
             handleInputChange={handleInputChange}
+            picklistConfig={picklistConfig}
           />
         </Grid>
         <Grid size={12}>

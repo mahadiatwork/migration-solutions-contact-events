@@ -193,7 +193,8 @@ const EditActivityModal = ({
   selectedRowData,
   ZOHO,
   users,
-  setEvents
+  setEvents,
+  picklistConfig,
 }) => {
   const theme = useTheme();
   const [value, setValue] = useState(0);
@@ -347,6 +348,7 @@ const handleSubmit = async () => {
           selectedRowData={selectedRowData}
           ZOHO={ZOHO}
           isEditMode={true} // Pass true if it's the EditModal, false otherwise
+          picklistConfig={picklistConfig}
         />
         <Box display="flex" justifyContent="space-between" mt={2}>
           {/* First button aligned to the left */}
