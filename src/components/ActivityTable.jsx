@@ -445,6 +445,8 @@ export default function ScheduleTable({
           zIndex: 100,
           backgroundColor: "white",
           overflowY: "hidden",
+          width: "100%",
+          marginLeft: 0,
         }}
       >
         <Grid item xs={2}>

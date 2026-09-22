@@ -400,11 +400,15 @@ const CreateActivityModal = ({
   return (
     <Box
       sx={{
-      position: "absolute",
+        position: "fixed",
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: 750,
+        width: "90%",
+        maxWidth: "750px",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        boxSizing: "border-box",
         bgcolor: "background.paper",
         border: "2px solid #000",
         boxShadow: 24,
