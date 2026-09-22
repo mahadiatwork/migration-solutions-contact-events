@@ -493,7 +493,7 @@ const FirstComponent = ({
           </FormControl>
         </Grid>
 
-        <Grid size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 4 }} sx={{ minWidth: 0 }}>
           {/* <Datepicker
             controls={["calendar", "time"]}
             display="center"
@@ -514,7 +514,7 @@ const FirstComponent = ({
               label="Start Time"
               value={startValue}
               disabled={formData.Banner ? true : false}
-              slotProps={{ textField: { size: "small" } }}
+              slotProps={{ textField: { size: "small", fullWidth: true } }}
               onChange={(e) => {
                 const addedHour = new Date(dayjs(e.$d).add(1, "hour").toDate());
                 handleInputChange("start", e.$d);
@@ -524,13 +524,13 @@ const FirstComponent = ({
                 console.log(e.$d);
                 console.log(addedHour);
               }}
-              sx={{ "& input": { py: 0 } }}
+              sx={{ width: "100%", "& input": { py: 0 } }}
               renderInput={(params) => <TextField {...params} size="small" />}
               format="DD/MM/YYYY hh:mm A" // Ensures 24-hour format for clarity
             />
           </LocalizationProvider>
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 4 }} sx={{ minWidth: 0 }}>
           {/* <Datepicker
             controls={["calendar", "time"]}
             display="center"
@@ -547,15 +547,15 @@ const FirstComponent = ({
               label="End Time"
               value={endValue}
               disabled={formData.Banner ? true : false}
-              slotProps={{ textField: { size: "small" } }}
+              slotProps={{ textField: { size: "small", fullWidth: true } }}
               onChange={(e) => handleEndDateChange(e)}
-              sx={{ "& input": { py: 0 } }}
+              sx={{ width: "100%", "& input": { py: 0 } }}
               renderInput={(params) => <TextField {...params} size="small" />}
               format="DD/MM/YYYY hh:mm A" // Ensures 24-hour format for clarity
             />
           </LocalizationProvider>
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 4 }} sx={{ minWidth: 0 }}>
           <FormControl fullWidth size="small">
             <InputLabel
               id="demo-simple-select-standard-label"
@@ -597,42 +597,93 @@ const FirstComponent = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid
-          size={{ xs: 12, sm: 6 }}
-          sx={{ display: "flex", alignItems: "center", minHeight: 40 }}
-        >
-          <FormControlLabel
-            sx={{ m: 0 }}
-            control={
-              <Checkbox
-                checked={formData.Banner}
-                onChange={handleBannerChecked}
+        <Grid size={12}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                md: "max-content max-content minmax(0, 1fr) max-content",
+              },
+              alignItems: "center",
+              columnGap: 2,
+              rowGap: 1,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", minHeight: 40 }}>
+              <FormControlLabel
+                sx={{ m: 0 }}
+                control={
+                  <Checkbox
+                    checked={formData.Banner}
+                    onChange={handleBannerChecked}
+                  />
+                }
+                label="Banner/Timeless"
               />
-            }
-            label="Banner/Timeless"
-          />
-        </Grid>
-        <Grid
-          size={{ xs: 12, sm: 6 }}
-          sx={{ display: "flex", alignItems: "center", minHeight: 40 }}
-        >
-          <FormControlLabel
-            sx={{ m: 0 }}
-            control={
-              <Checkbox
-                checked={!sendNotification}
-                onChange={(e) => {
-                  const isChecked = e.target.checked;
-                  setSendNotification(!isChecked); // Update sendNotification state
-                  handleInputChangeWithEnd("$send_notification", !isChecked);
-                  if (isChecked) {
-                    handleInputChange("Reminder_Text", "None"); // Set Reminder to "None"
-                  }
-                }}
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", minHeight: 40 }}>
+              <FormControlLabel
+                sx={{ m: 0 }}
+                control={
+                  <Checkbox
+                    checked={!sendNotification}
+                    onChange={(e) => {
+                      const isChecked = e.target.checked;
+                      setSendNotification(!isChecked); // Update sendNotification state
+                      handleInputChangeWithEnd("$send_notification", !isChecked);
+                      if (isChecked) {
+                        handleInputChange("Reminder_Text", "None"); // Set Reminder to "None"
+                      }
+                    }}
+                  />
+                }
+                label="Don't send notification"
               />
-            }
-            label="Don't send notification"
-          />
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", minHeight: 40 }}>
+              <FormControlLabel
+                sx={{ m: 0 }}
+                control={
+                  <Checkbox
+                    checked={formData.Create_Separate_Event_For_Each_Contact}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "Create_Separate_Event_For_Each_Contact",
+                        e.target.checked
+                      )
+                    }
+                    disabled={isEditMode} // Disable the checkbox in edit mode
+                  />
+                }
+                label="Create separate activity for each contact"
+              />
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: { sm: "flex-end" },
+                minHeight: 40,
+              }}
+            >
+              <Typography variant="body1" sx={{ mr: 1 }}>
+                Colour:
+              </Typography>
+              <div style={colorBoxStyle} onClick={handleClick} />
+              {displayColorPicker && (
+                <div style={popover}>
+                  <div style={cover} />
+                  <CustomColorPicker
+                    recentColors={recentColors}
+                    handleClose={handleClose}
+                    handleColorChange={handleColorChange}
+                  />
+                </div>
+              )}
+            </Box>
+          </Box>
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>
           <ContactField
@@ -737,54 +788,6 @@ const FirstComponent = ({
             value={formData.Venue} // Use formData
             onChange={(e) => handleInputChange("Venue", e.target.value)}
           />
-        </Grid>
-        <Grid
-          size={12}
-          container
-          columnSpacing={2}
-          rowSpacing={1}
-          alignItems="center"
-        >
-          <Grid size={{ xs: 12, sm: 8 }}>
-            <FormControlLabel
-              sx={{ m: 0 }}
-              control={
-                <Checkbox
-                  checked={formData.Create_Separate_Event_For_Each_Contact}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "Create_Separate_Event_For_Each_Contact",
-                      e.target.checked
-                    )
-                  }
-                  disabled={isEditMode} // Disable the checkbox in edit mode
-                />
-              }
-              label="Create separate activity for each contact"
-            />
-          </Grid>
-
-          <Grid
-            size={{ xs: 12, sm: 4 }}
-            display="flex"
-            alignItems="center"
-            justifyContent={{ sm: "flex-end" }}
-          >
-            <Typography variant="body1" sx={{ mr: 1 }}>
-              Colour:
-            </Typography>
-            <div style={colorBoxStyle} onClick={handleClick} />
-            {displayColorPicker && (
-              <div style={popover}>
-                <div style={cover} />
-                <CustomColorPicker
-                  recentColors={recentColors}
-                  handleClose={handleClose}
-                  handleColorChange={handleColorChange}
-                />
-              </div>
-            )}
-          </Grid>
         </Grid>
       </Grid>
     </Box>
