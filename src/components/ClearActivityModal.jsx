@@ -169,20 +169,29 @@ export default function ClearActivityModal({
           Entity: "Events",
           RecordID: selectedRowData?.id,
         });
-  
-        if (deleteResponse.data[0].code === "SUCCESS") {
+
+        const deleteResult = deleteResponse?.data?.[0];
+
+        if (deleteResult?.code === "SUCCESS") {
           setSnackbarMessage("Event erased successfully!");
           setSnackbarSeverity("success");
           setSnackbarOpen(true);
-  
+
           // Remove the event from the events state
           setEvents((prevEvents) => prevEvents.filter((event) => event.id !== selectedRowData?.id));
-  
+
           if (addActivityToHistory) {
             await createHistory();
           }
+
+          // Reload from Zoho after deletion so the related-events list is
+          // authoritative. This was part of the original working erase flow.
+          window.location.reload();
+          return;
         } else {
-          throw new Error("Failed to delete the event.");
+          throw new Error(
+            deleteResult?.message || "Failed to delete the event."
+          );
         }
       }
   
@@ -191,7 +200,9 @@ export default function ClearActivityModal({
       }, 1000);
     } catch (error) {
       console.error("Error during submission:", error);
-      setSnackbarMessage("An unexpected error occurred, try again!");
+      setSnackbarMessage(
+        error?.message || "An unexpected error occurred, try again!"
+      );
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }

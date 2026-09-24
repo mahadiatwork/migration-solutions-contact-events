@@ -322,7 +322,7 @@ export default function ScheduleTable({
           !customDateRange ||
           (new Date(row.date) >= new Date(customDateRange.startDate) &&
             new Date(row.date) <= new Date(customDateRange.endDate));
-        const clearedMatch = !showCleared || row.Event_Status === "Closed";
+        const clearedMatch = showCleared || row.Event_Status !== "Closed";
 
         return (
           typeMatch && priorityMatch && userMatch && dateMatch && clearedMatch
