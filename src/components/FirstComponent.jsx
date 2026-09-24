@@ -24,6 +24,14 @@ import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 
+const commonTextStyles = {
+  fontSize: "9pt",
+  "& .MuiOutlinedInput-input": { fontSize: "9pt" },
+  "& .MuiAutocomplete-input": { fontSize: "9pt" },
+  "& .MuiFormLabel-root": { fontSize: "9pt" },
+  "& .MuiTypography-root": { fontSize: "9pt" },
+};
+
 const parseDateString = (dateString) => {
   const [datePart, timePart, ampm] = dateString.split(" "); // Split date and time
   const [day, month, year] = datePart.split("/").map(Number); // Split date part
@@ -238,7 +246,12 @@ const FirstComponent = ({
   const [openEndDatepicker, setOpenEndDatepicker] = useState(false);
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [color, setColor] = useState(formData.Colour || "#ff0000");
-  const [sendNotification, setSendNotification] = useState(true);
+  const [sendInvites, setSendInvites] = useState(
+    Boolean(formData?.Send_Invites)
+  );
+  const [sendReminders, setSendReminders] = useState(
+    Boolean(formData?.Send_Reminders)
+  );
 
   const handleBannerChecked = (e) => {
     handleInputChange("Banner", e.target.checked);
@@ -287,6 +300,28 @@ const FirstComponent = ({
   const handleColorChange = (newColor) => {
     setColor(newColor);
     handleInputChange("Colour", newColor);
+  };
+
+  const handleSendInvitesChange = (checked) => {
+    setSendInvites(checked);
+    handleInputChange("Send_Invites", checked);
+    handleInputChange("$send_notification", checked);
+  };
+
+  const handleSendRemindersChange = (checked) => {
+    setSendReminders(checked);
+    handleInputChange("Send_Reminders", checked);
+
+    if (checked) {
+      const reminderText =
+        formData.Reminder_Text && formData.Reminder_Text !== "None"
+          ? formData.Reminder_Text
+          : "15 minutes before";
+      handleInputChange("Reminder_Text", reminderText);
+    } else {
+      handleInputChange("Remind_Participants", []);
+      handleInputChange("Remind_At", null);
+    }
   };
 
   // Custom input for datepicker
@@ -397,8 +432,8 @@ const FirstComponent = ({
   // ); // Selected values in autocomplete
 
   return (
-    <Box>
-      <Grid container spacing={2} sx={{ mt: 2 }}>
+    <Box sx={{ mt: 2, ...commonTextStyles }}>
+      <Grid container spacing={1.7}>
         <Grid size={12}>
           <CustomTextField
             fullWidth
@@ -428,7 +463,7 @@ const FirstComponent = ({
           </FormControl>
         </Grid>
 
-        <Grid size={4}>
+        <Grid size={4} sx={{ minWidth: 0 }}>
           {/* <Datepicker
             controls={["calendar", "time"]}
             display="center"
@@ -449,7 +484,7 @@ const FirstComponent = ({
               label="Start Time"
               value={startValue}
               disabled={formData.Banner ? true : false}
-              slotProps={{ textField: { size: "small" } }}
+              slotProps={{ textField: { size: "small", fullWidth: true } }}
               onChange={(e) => {
                 const addedHour = new Date(dayjs(e.$d).add(1, "hour").toDate());
                 handleInputChange("start", e.$d);
@@ -459,13 +494,13 @@ const FirstComponent = ({
                 console.log(e.$d);
                 console.log(addedHour);
               }}
-              sx={{ "& input": { py: 0 } }}
+              sx={{ width: "100%", "& input": { py: 0 } }}
               renderInput={(params) => <TextField {...params} size="small" />}
               format="DD/MM/YYYY hh:mm A" // Ensures 24-hour format for clarity
             />
           </LocalizationProvider>
         </Grid>
-        <Grid size={4}>
+        <Grid size={4} sx={{ minWidth: 0 }}>
           {/* <Datepicker
             controls={["calendar", "time"]}
             display="center"
@@ -482,15 +517,15 @@ const FirstComponent = ({
               label="End Time"
               value={endValue}
               disabled={formData.Banner ? true : false}
-              slotProps={{ textField: { size: "small" } }}
+              slotProps={{ textField: { size: "small", fullWidth: true } }}
               onChange={(e) => handleEndDateChange(e)}
-              sx={{ "& input": { py: 0 } }}
+              sx={{ width: "100%", "& input": { py: 0 } }}
               renderInput={(params) => <TextField {...params} size="small" />}
               format="DD/MM/YYYY hh:mm A" // Ensures 24-hour format for clarity
             />
           </LocalizationProvider>
         </Grid>
-        <Grid size={4}>
+        <Grid size={4} sx={{ minWidth: 0 }}>
           <FormControl fullWidth size="small">
             <InputLabel
               id="demo-simple-select-standard-label"
@@ -532,16 +567,39 @@ const FirstComponent = ({
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={formData.Banner}
-                onChange={handleBannerChecked}
-              />
-            }
-            label="Banner/Timeless"
-          />
+        <Grid size={12} container columnSpacing={2} alignItems="center">
+          <Grid size={{ xs: 12, sm: 3 }}>
+            <FormControlLabel
+              sx={{ m: 0 }}
+              control={
+                <Checkbox
+                  checked={formData.Banner}
+                  onChange={handleBannerChecked}
+                />
+              }
+              label="Banner/Timeless"
+            />
+          </Grid>
+          <Grid
+            size={{ xs: 12, sm: 3 }}
+            display="flex"
+            alignItems="center"
+          >
+            <Typography variant="body1" sx={{ mr: 1 }}>
+              Colour:
+            </Typography>
+            <div style={colorBoxStyle} onClick={handleClick} />
+            {displayColorPicker && (
+              <div style={popover}>
+                <div style={cover} />
+                <CustomColorPicker
+                  recentColors={recentColors}
+                  handleClose={handleClose}
+                  handleColorChange={handleColorChange}
+                />
+              </div>
+            )}
+          </Grid>
         </Grid>
         <Grid size={12}>
           <ContactField
@@ -551,23 +609,53 @@ const FirstComponent = ({
             selectedRowData={selectedRowData}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={!sendNotification}
-                onChange={(e) => {
-                  const isChecked = e.target.checked;
-                  setSendNotification(!isChecked); // Update sendNotification state
-                  handleInputChangeWithEnd("$send_notification", !isChecked);
-                  if (isChecked) {
-                    handleInputChange("Reminder_Text", "None"); // Set Reminder to "None"
+        <Grid size={12} container columnSpacing={2} alignItems="center">
+          <Grid size={{ xs: 12, sm: 3 }}>
+            <FormControlLabel
+              sx={{ m: 0 }}
+              control={
+                <Checkbox
+                  checked={sendInvites}
+                  onChange={(event) =>
+                    handleSendInvitesChange(event.target.checked)
                   }
-                }}
-              />
-            }
-            label="Don't send notification"
-          />
+                />
+              }
+              label="Send Invites"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 3 }}>
+            <FormControlLabel
+              sx={{ m: 0 }}
+              control={
+                <Checkbox
+                  checked={sendReminders}
+                  onChange={(event) =>
+                    handleSendRemindersChange(event.target.checked)
+                  }
+                />
+              }
+              label="Send Reminders"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormControlLabel
+              sx={{ m: 0 }}
+              control={
+                <Checkbox
+                  checked={formData.Create_Separate_Event_For_Each_Contact}
+                  onChange={(event) =>
+                    handleInputChange(
+                      "Create_Separate_Event_For_Each_Contact",
+                      event.target.checked
+                    )
+                  }
+                  disabled={isEditMode}
+                />
+              }
+              label="Create separate activity for each contact"
+            />
+          </Grid>
         </Grid>
         <Grid size={12}>
           <AccountField
@@ -589,7 +677,7 @@ const FirstComponent = ({
               id="schedule-for-autocomplete"
               size="small"
               options={users} // Ensure users array is correctly passed
-              getOptionLabel={(option) => option.full_name || ""} // Use full_name to display
+              getOptionLabel={(option) => option.full_name || option.name || ""}
               value={formData.scheduleFor || null} // Ensure it's an object, or null if not set
               onChange={(event, newValue) => {
                 handleInputChange("scheduleFor", newValue || null); // Set the selected value
@@ -631,26 +719,23 @@ const FirstComponent = ({
         </Grid>
         <Grid size={3}>
           <FormControl fullWidth size="small" sx={commonStyles}>
-            <InputLabel>Reminder</InputLabel>
+            <InputLabel>Ring Alarm</InputLabel>
             <Select
               label="Ring Alarm"
               fullWidth
-              value={formData.Reminder_Text || "None"} // Default to "None" if disabled
+              value={formData.Reminder_Text || "15 minutes before"}
               onChange={(e) =>
                 handleInputChange("Reminder_Text", e.target.value)
               }
-              disabled={!sendNotification} // Disable if "Don't send notification" is checked
             >
               <MenuItem value="None">None</MenuItem>
               <MenuItem value="At time of meeting">At time of meeting</MenuItem>
-              <MenuItem value="5 minutes before">5 minutes before</MenuItem>
-              <MenuItem value="10 minutes before"></MenuItem>
-              <MenuItem value="15 minutes before">15 minutes before</MenuItem>
-              <MenuItem value="30 minutes before">30 minutes before</MenuItem>
-              <MenuItem value="1 hour before">1 hour before</MenuItem>
-              <MenuItem value="2 hours before">2 hours before</MenuItem>
-              <MenuItem value="1 day before">1 day before</MenuItem>
-              <MenuItem value="2 days before">2 days before</MenuItem>
+              <MenuItem value="5 minutes before">5 minutes</MenuItem>
+              <MenuItem value="10 minutes before">10 minutes</MenuItem>
+              <MenuItem value="15 minutes before">15 minutes</MenuItem>
+              <MenuItem value="30 minutes before">30 minutes</MenuItem>
+              <MenuItem value="60 minutes before">1 hour</MenuItem>
+              <MenuItem value="120 minutes before">2 hours</MenuItem>
             </Select>
           </FormControl>
         </Grid>
@@ -663,42 +748,6 @@ const FirstComponent = ({
             value={formData.Venue} // Use formData
             onChange={(e) => handleInputChange("Venue", e.target.value)}
           />
-        </Grid>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={8}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={formData.Create_Separate_Event_For_Each_Contact}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "Create_Separate_Event_For_Each_Contact",
-                      e.target.checked
-                    )
-                  }
-                  disabled={isEditMode} // Disable the checkbox in edit mode
-                />
-              }
-              label="Create separate activity for each contact"
-            />
-          </Grid>
-
-          <Grid item xs={6} sm={4} md={2} display="flex" alignItems="center">
-            <Typography variant="body1" sx={{ mr: 1 }}>
-              Colour:
-            </Typography>
-            <div style={colorBoxStyle} onClick={handleClick} />
-            {displayColorPicker && (
-              <div style={popover}>
-                <div style={cover} />
-                <CustomColorPicker
-                  recentColors={recentColors}
-                  handleClose={handleClose}
-                  handleColorChange={handleColorChange}
-                />
-              </div>
-            )}
-          </Grid>
         </Grid>
       </Grid>
     </Box>

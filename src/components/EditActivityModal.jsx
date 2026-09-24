@@ -54,6 +54,9 @@ function calculateRemindAt(reminderText, startDateTime) {
     case "5 minutes before":
       startDate.setMinutes(startDate.getMinutes() - 5);
       break;
+    case "10 minutes before":
+      startDate.setMinutes(startDate.getMinutes() - 10);
+      break;
     case "15 minutes before":
       startDate.setMinutes(startDate.getMinutes() - 15);
       break;
@@ -61,9 +64,11 @@ function calculateRemindAt(reminderText, startDateTime) {
       startDate.setMinutes(startDate.getMinutes() - 30);
       break;
     case "1 hour before":
+    case "60 minutes before":
       startDate.setHours(startDate.getHours() - 1);
       break;
     case "2 hours before":
+    case "120 minutes before":
       startDate.setHours(startDate.getHours() - 2);
       break;
     case "1 day before":
@@ -111,16 +116,16 @@ function transformFormSubmission(data) {
   const transformScheduleWithToParticipants = (scheduleWith) => {
     return scheduleWith.map((contact) => ({
       Email: contact.Email || null, // Use Email if available, or set to null
-      name: contact.Full_Name || null, // Use Full_Name for the name
+      name: contact.Full_Name || contact.name || null, // Use Full_Name for the name
       invited: false, // Default to false
       type: "contact", // Default type to "contact"
-      participant: contact.id || null, // Use id as participant ID
+      participant: contact.participant || contact.id || null, // Use the CRM participant ID
       status: "not_known", // Default status to "not_known"
     }));
   };
 
-  const participantsFromScheduleWith = data.scheduleWith
-    ? transformScheduleWithToParticipants(data.scheduleWith)
+  const participantsFromScheduleWith = data.scheduledWith
+    ? transformScheduleWithToParticipants(data.scheduledWith)
     : [];
 
   let transformedData = {
@@ -135,24 +140,38 @@ function transformFormSubmission(data) {
     se_module: "Accounts",
 
     // Combine the manually set participants and those from `scheduleWith`
-    Participants: data.scheduledWith,
+    Participants: participantsFromScheduleWith,
     Duration_Min: data.Duration_Min.toString(),
     Owner: {
       id: data?.scheduleFor?.id,
     },
   };
 
+  let remindAt = null;
   if (
     data?.Reminder_Text !== null &&
     data?.Reminder_Text !== "" &&
     data?.Reminder_Text !== "None"
   ) {
-    const remindAt = calculateRemindAt(
+    remindAt = calculateRemindAt(
       data?.Reminder_Text,
       formatDateWithOffset(data.start)
     );
     transformedData["Remind_At"] = remindAt;
+  } else {
+    delete transformedData["Remind_At"];
+  }
+
+  if (data.Send_Reminders && remindAt) {
+    transformedData["User_Reminder"] = remindAt;
+  } else {
+    delete transformedData["User_Reminder"];
+  }
+
+  if (data.Send_Invites) {
     transformedData["$send_notification"] = true;
+  } else {
+    delete transformedData["$send_notification"];
   }
 
   // Explicitly remove the scheduleWith, scheduleFor, and description keys
@@ -182,13 +201,12 @@ function TabPanel(props) {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box p={3}>{children}</Box>}
+      {value === index && <Box sx={{ px: 0, py: 1 }}>{children}</Box>}
     </div>
   );
 }
 
 const EditActivityModal = ({
-  openEditModal,
   handleClose,
   selectedRowData,
   ZOHO,
@@ -217,8 +235,12 @@ const EditActivityModal = ({
     Description: selectedRowData?.Description || "",
     Banner: selectedRowData?.Banner || false,
     scheduleFor: selectedRowData?.Owner || null,
-    Reminder_Text: selectedRowData?.Reminder_Text || null,
-    reminder: selectedRowData.$send_notification || false,
+    Reminder_Text: selectedRowData?.Reminder_Text || "15 minutes before",
+    Send_Invites: Boolean(
+      selectedRowData?.Send_Invites || selectedRowData?.$send_notification
+    ),
+    Send_Reminders: Boolean(selectedRowData?.Send_Reminders),
+    $send_notification: Boolean(selectedRowData?.$send_notification),
   });
 
   const [isSnackbarOpen, setSnackbarOpen] = useState(false);
@@ -300,25 +322,37 @@ const handleSubmit = async () => {
 
   return (
     <Box
+      role="dialog"
+      aria-labelledby="edit-activity-title"
       sx={{
-        position: "absolute",
+        position: "fixed",
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: 750,
+        width: "90%",
+        maxWidth: "750px",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        boxSizing: "border-box",
         bgcolor: "background.paper",
-        border: "2px solid #000",
+        borderRadius: 4,
         boxShadow: 24,
-        p: 2,
-        borderRadius: 5,
-        zIndex: 999,
+        zIndex: 100,
+        p: "15px 30px 20px 30px",
       }}
     >
-      <Box display="flex" justifyContent="space-between" mb={2}>
-        <Typography variant="h6">Edit Activity</Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography
+          id="edit-activity-title"
+          variant="subtitle1"
+          sx={{ fontWeight: "bold" }}
+        >
+          Edit Activity
+        </Typography>
 
         {/* Replacing IconButton with Cancel Button */}
         <Button
+          size="small"
           variant="outlined"
           color="error"
           onClick={handleClose}
@@ -333,6 +367,7 @@ const handleSubmit = async () => {
           onChange={handleChange}
           textColor="inherit"
           aria-label="simple tabs example"
+          sx={{ minHeight: 40, "& .MuiTab-root": { minHeight: 40, fontSize: "9pt" } }}
         >
           <Tab label="General" />
           <Tab label="Details" />

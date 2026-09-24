@@ -60,6 +60,9 @@ function calculateRemindAt(reminderText, startDateTime) {
     case "5 minutes before":
       startDate.setMinutes(startDate.getMinutes() - 5);
       break;
+    case "10 minutes before":
+      startDate.setMinutes(startDate.getMinutes() - 10);
+      break;
     case "15 minutes before":
       startDate.setMinutes(startDate.getMinutes() - 15);
       break;
@@ -67,9 +70,11 @@ function calculateRemindAt(reminderText, startDateTime) {
       startDate.setMinutes(startDate.getMinutes() - 30);
       break;
     case "1 hour before":
+    case "60 minutes before":
       startDate.setHours(startDate.getHours() - 1);
       break;
     case "2 hours before":
+    case "120 minutes before":
       startDate.setHours(startDate.getHours() - 2);
       break;
     case "1 day before":
@@ -122,7 +127,7 @@ function transformFormSubmission(data, individualParticipant = null) {
       name: contact.Full_Name || null,
       invited: false,
       type: "contact",
-      participant: contact.participant || null,
+      participant: contact.participant || contact.id || null,
       status: "not_known",
     }));
   };
@@ -133,7 +138,8 @@ function transformFormSubmission(data, individualParticipant = null) {
           name: individualParticipant.Full_Name || null,
           invited: false,
           type: "contact",
-          participant: individualParticipant.participant || null,
+          participant:
+            individualParticipant.participant || individualParticipant.id || null,
           status: "not_known",
         },
       ]
@@ -160,17 +166,31 @@ function transformFormSubmission(data, individualParticipant = null) {
     },
   };
 
+  let remindAt = null;
   if (
     data?.Reminder_Text !== null &&
     data?.Reminder_Text !== "" &&
     data?.Reminder_Text !== "None"
   ) {
-    const remindAt = calculateRemindAt(
+    remindAt = calculateRemindAt(
       data?.Reminder_Text,
       formatDateWithOffset(data.start)
     );
     transformedData["Remind_At"] = remindAt;
+  } else {
+    delete transformedData["Remind_At"];
+  }
+
+  if (data.Send_Reminders && remindAt) {
+    transformedData["User_Reminder"] = remindAt;
+  } else {
+    delete transformedData["User_Reminder"];
+  }
+
+  if (data.Send_Invites) {
     transformedData["$send_notification"] = true;
+  } else {
+    delete transformedData["$send_notification"];
   }
 
   // if (
@@ -204,13 +224,12 @@ function TabPanel(props) {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box p={3}>{children}</Box>}
+      {value === index && <Box sx={{ px: 0, py: 1 }}>{children}</Box>}
     </div>
   );
 }
 
 const CreateActivityModal = ({
-  openCreateModal,
   handleClose,
   ZOHO,
   users,
@@ -243,7 +262,10 @@ const CreateActivityModal = ({
     Regarding: "",
     Duration_Min: 60,
     Create_Separate_Event_For_Each_Contact: false,
-    Reminder_Text: "None",
+    Reminder_Text: "15 minutes before",
+    Send_Invites: false,
+    Send_Reminders: false,
+    $send_notification: false,
   });
 
   const isFormValid = () => {
@@ -398,25 +420,37 @@ const CreateActivityModal = ({
   
   return (
     <Box
+      role="dialog"
+      aria-labelledby="create-activity-title"
       sx={{
-      position: "absolute",
+        position: "fixed",
         top: "50%",
         left: "50%",
         transform: "translate(-50%, -50%)",
-        width: 750,
+        width: "90%",
+        maxWidth: "750px",
+        maxHeight: "90vh",
+        overflowY: "auto",
+        boxSizing: "border-box",
         bgcolor: "background.paper",
-        border: "2px solid #000",
+        borderRadius: 4,
         boxShadow: 24,
-        p: 2,
-        borderRadius: 5,
-        zIndex: 999,
+        zIndex: 100,
+        p: "15px 30px 20px 30px",
       }}
     >
-      <Box display="flex" justifyContent="space-between" mb={2}>
-        <Typography variant="h6">Create Activity</Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center">
+        <Typography
+          id="create-activity-title"
+          variant="subtitle1"
+          sx={{ fontWeight: "bold" }}
+        >
+          Create Activity
+        </Typography>
 
         {/* Replacing IconButton with Cancel Button */}
         <Button
+          size="small"
           variant="outlined"
           color="error"
           onClick={handleClose}
@@ -431,6 +465,7 @@ const CreateActivityModal = ({
           onChange={handleChange}
           textColor="inherit"
           aria-label="simple tabs example"
+          sx={{ minHeight: 40, "& .MuiTab-root": { minHeight: 40, fontSize: "9pt" } }}
         >
           <Tab label="General" />
           <Tab label="Details" />
