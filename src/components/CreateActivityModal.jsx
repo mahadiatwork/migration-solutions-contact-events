@@ -6,7 +6,6 @@ import {
   Button,
   CircularProgress,
   IconButton,
-  Modal,
   Snackbar,
   Tab,
   Tabs,
@@ -205,21 +204,20 @@ function TabPanel(props) {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ px: 1.5, py: 1 }}>{children}</Box>}
+      {value === index && <Box p={3}>{children}</Box>}
     </div>
   );
 }
 
 const CreateActivityModal = ({
-  open,
+  openCreateModal,
   handleClose,
   ZOHO,
   users,
   loggedInUser,
   setEvents,
   setSelectedRowIndex,
-  setHighlightedRow,
-  picklistConfig,
+  setHighlightedRow
 }) => {
   const theme = useTheme();
   const [value, setValue] = useState(0);
@@ -397,36 +395,28 @@ const CreateActivityModal = ({
 
 
   console.log("clear", loggedInUser)
-
+  
   return (
-    <Modal open={open} onClose={handleClose} aria-labelledby="create-activity-title">
-      <Box
-        sx={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: { xs: "90%", sm: "80%" },
-          maxWidth: "960px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxSizing: "border-box",
-          bgcolor: "background.paper",
-          border: "1px solid",
-          borderColor: "divider",
-          boxShadow: 24,
-          p: 1.5,
-          borderRadius: 2,
-        }}
-      >
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-        <Typography id="create-activity-title" variant="h6">
-          Create Activity
-        </Typography>
+    <Box
+      sx={{
+      position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: 750,
+        bgcolor: "background.paper",
+        border: "2px solid #000",
+        boxShadow: 24,
+        p: 2,
+        borderRadius: 5,
+        zIndex: 999,
+      }}
+    >
+      <Box display="flex" justifyContent="space-between" mb={2}>
+        <Typography variant="h6">Create Activity</Typography>
 
         {/* Replacing IconButton with Cancel Button */}
         <Button
-          size="small"
           variant="outlined"
           color="error"
           onClick={handleClose}
@@ -441,7 +431,6 @@ const CreateActivityModal = ({
           onChange={handleChange}
           textColor="inherit"
           aria-label="simple tabs example"
-          sx={{ minHeight: 40, "& .MuiTab-root": { minHeight: 40 } }}
         >
           <Tab label="General" />
           <Tab label="Details" />
@@ -454,7 +443,6 @@ const CreateActivityModal = ({
           handleInputChange={handleInputChange}
           users={users}
           ZOHO={ZOHO}
-          picklistConfig={picklistConfig}
         />
         <Box display="flex" justifyContent="space-between" mt={2}>
           {/* First button aligned to the left */}
@@ -567,8 +555,7 @@ const CreateActivityModal = ({
           {snackbarMessage}
         </Alert>
       </Snackbar>
-      </Box>
-    </Modal>
+    </Box>
   );
 };
 

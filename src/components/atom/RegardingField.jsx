@@ -7,45 +7,30 @@ import {
   TextField,
   Box,
 } from "@mui/material";
-import { getRegardingOptionsFromConfig } from "../../services/picklistConfigService";
 
-const RegardingField = ({ formData, handleInputChange, picklistConfig }) => {
-  const existingValue = formData?.Regarding || "";
-  const predefinedOptions = React.useMemo(
-    () =>
-      getRegardingOptionsFromConfig(
-        formData?.Type_of_Activity,
-        picklistConfig
-      ),
-    [formData?.Type_of_Activity, picklistConfig]
-  );
+const RegardingField = ({ formData, handleInputChange }) => {
+  const predefinedOptions = [
+    "Hourly Consult $220",
+    "Initial Consultation Fee $165",
+    "No appointments today",
+    "No appointments tonight",
+  ]; // The predefined options
 
-  const [selectedValue, setSelectedValue] = useState(existingValue);
+  const [selectedValue, setSelectedValue] = useState(formData.Regarding || "");
   const [manualInput, setManualInput] = useState("");
 
   useEffect(() => {
-    if (!existingValue) {
-      setSelectedValue("");
-      setManualInput("");
-    } else if (predefinedOptions.includes(existingValue)) {
-      setSelectedValue(existingValue);
-      setManualInput("");
-    } else {
-      setSelectedValue("Other");
-      setManualInput(existingValue);
+    // Check if the selected value is part of the predefined options
+    if (selectedValue && !predefinedOptions.includes(selectedValue)) {
+      setSelectedValue("Other"); // Set to "Other" if it doesn't match any predefined option
+      setManualInput(formData.Regarding); // Populate manual input with the custom value
     }
-    // Resync only when the option set changes. During manual entry the parent
-    // value changes on each keystroke and must not collapse the "Other" field.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData?.Type_of_Activity, picklistConfig, predefinedOptions]);
+  }, [selectedValue, formData.Regarding]);
 
   const handleSelectChange = (event) => {
     const value = event.target.value;
     setSelectedValue(value);
-    if (value === "Other") {
-      setManualInput("");
-      handleInputChange("Regarding", "Other");
-    } else {
+    if (value !== "Other") {
       setManualInput(""); // Clear manual input if predefined option is selected
       handleInputChange("Regarding", value); // Pass the selected value to handleInputChange
     }

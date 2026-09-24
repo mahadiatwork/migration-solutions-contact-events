@@ -3,7 +3,6 @@ import "./App.css";
 import ActivityTable from "./components/ActivityTable";
 import { CircularProgress, Box } from "@mui/material"; // Add MUI CircularProgress for the loader
 import { subDays } from "date-fns";
-import { fetchPicklistConfig } from "./services/picklistConfigService";
 
 const ZOHO = window.ZOHO;
 
@@ -20,7 +19,6 @@ function App() {
   const [recentColors, setRecentColor] = useState(""); // Move this to context
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [entityId, setEntityId] = useState(null);
-  const [picklistConfig, setPicklistConfig] = useState(null);
 
   useEffect(() => {
 
@@ -37,23 +35,6 @@ function App() {
       });
     });
   }, []);
-
-  useEffect(() => {
-    if (!zohoLoaded) return;
-
-    let cancelled = false;
-    fetchPicklistConfig()
-      .then((config) => {
-        if (!cancelled) setPicklistConfig(config);
-      })
-      .catch((error) => {
-        console.warn("Unable to load Widget_Picklist_Config:", error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [zohoLoaded]);
 
   useEffect(() => {
     async function getData() {
@@ -162,11 +143,10 @@ function App() {
         setFilterDate,
         recentColors,
         setRecentColor,
-        picklistConfig,
       }}
     >
       {/* Conditionally render the loader or the main content */}
-      {loading || !picklistConfig ? (
+      {loading ? (
         <Box
           sx={{
             display: "flex",
@@ -188,7 +168,6 @@ function App() {
           setRecentColor={setRecentColor}
           loggedInUser={loggedInUser}
           setEvents={setEvents}
-          picklistConfig={picklistConfig}
         />
       )}
     </ZohoContext.Provider>

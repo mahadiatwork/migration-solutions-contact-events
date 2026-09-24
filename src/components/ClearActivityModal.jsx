@@ -19,10 +19,6 @@ import {
   Alert,
 } from "@mui/material";
 import "react-quill/dist/quill.snow.css";
-import {
-  getDurationOptionsFromConfig,
-  getResultOptionsFromConfig,
-} from "../services/picklistConfigService";
 
 export default function ClearActivityModal({
   open,
@@ -30,12 +26,11 @@ export default function ClearActivityModal({
   selectedRowData,
   ZOHO,
   setEvents,
-  picklistConfig,
 }) {
   const calculateDuration = (durationInMinutes) => {
     if (!durationInMinutes) return "5 minutes";
     const minutes = parseInt(durationInMinutes, 10);
-    if (minutes < 60 || minutes % 60 !== 0) {
+    if (minutes < 60) {
       return `${minutes} minutes`;
     } else {
       const hours = Math.floor(minutes / 60);
@@ -43,45 +38,10 @@ export default function ClearActivityModal({
     }
   };
 
-  const selectedDurationMinutes =
-    selectedRowData?.Duration_Min ?? selectedRowData?.duration;
   const [duration, setDuration] = React.useState(
-    calculateDuration(selectedDurationMinutes)
-  );
-  const configuredDurationLabels = React.useMemo(
-    () =>
-      [
-        ...new Set(
-          [
-            calculateDuration(selectedDurationMinutes),
-            ...getDurationOptionsFromConfig(
-              picklistConfig,
-              selectedDurationMinutes
-            ).map(calculateDuration),
-          ]
-        ),
-      ],
-    [picklistConfig, selectedDurationMinutes]
+    calculateDuration(selectedRowData?.duration)
   );
   const [result, setResult] = React.useState(selectedRowData?.result);
-  const configuredResultOptions = React.useMemo(
-    () =>
-      getResultOptionsFromConfig(
-        selectedRowData?.Type_of_Activity,
-        picklistConfig
-      ),
-    [picklistConfig, selectedRowData?.Type_of_Activity]
-  );
-  const resultOptions =
-    result && !configuredResultOptions.includes(result)
-      ? [result, ...configuredResultOptions]
-      : configuredResultOptions;
-
-  React.useEffect(() => {
-    if (!result && configuredResultOptions.length) {
-      setResult(configuredResultOptions[0]);
-    }
-  }, [configuredResultOptions, result]);
   const [addActivityToHistory, setAddActivityToHistory] = React.useState(false);
   const [clearChecked, setClearChecked] = React.useState(
     selectedRowData?.Cleared
@@ -324,11 +284,10 @@ export default function ClearActivityModal({
                     sx={{ minWidth: 150 }}
                     disabled
                   >
-                    {configuredDurationLabels.map((option) => (
-                      <MenuItem key={option} value={option}>
-                        {option}
-                      </MenuItem>
-                    ))}
+                    <MenuItem value="5 minutes">5 minutes</MenuItem>
+                    <MenuItem value="30 minutes">30 minutes</MenuItem>
+                    <MenuItem value="1 hour">1 hour</MenuItem>
+                    <MenuItem value="2 hours">2 hours</MenuItem>
                   </Select>
                 </FormGroup>
 
@@ -370,11 +329,103 @@ export default function ClearActivityModal({
                     sx={{ marginLeft: 2, minWidth: 150 }}
                     size="small"
                   >
-                    {resultOptions.map((option) => (
-                      <MenuItem key={option} value={option}>
-                        {option}
-                      </MenuItem>
-                    ))}
+                    <MenuItem value="Call Attempted">Call Attempted</MenuItem>
+                    <MenuItem value="Call Completed">Call Completed</MenuItem>
+                    <MenuItem value="Call Left Message">
+                      Call Left Message
+                    </MenuItem>
+                    <MenuItem value="Call Received">Call Received</MenuItem>
+                    <MenuItem value="Meeting Held">Meeting Held</MenuItem>
+                    <MenuItem value="Meeting Not Held">
+                      Meeting Not Held
+                    </MenuItem>
+                    <MenuItem value="To-do Done">To-do Done</MenuItem>
+                    <MenuItem value="To-do Not Done">To-do Not Done</MenuItem>
+                    <MenuItem value="Appointment Completed">
+                      Appointment Completed
+                    </MenuItem>
+                    <MenuItem value="Appointment Not Completed">
+                      Appointment Not Completed
+                    </MenuItem>
+                    <MenuItem value="Boardroom - Completed">
+                      Boardroom - Completed
+                    </MenuItem>
+                    <MenuItem value="Boardroom - Not Completed">
+                      Boardroom - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Call Billing - Completed">
+                      Call Billing - Completed
+                    </MenuItem>
+                    <MenuItem value="Initial Consultation - Completed">
+                      Initial Consultation - Completed
+                    </MenuItem>
+                    <MenuItem value="Initial Consultation - Not Completed">
+                      Initial Consultation - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Mail - Completed">
+                      Mail - Completed
+                    </MenuItem>
+                    <MenuItem value="Mail - Not Completed">
+                      Mail - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Meeting Billing - Completed">
+                      Meeting Billing - Completed
+                    </MenuItem>
+                    <MenuItem value="Meeting Billing - Not Completed">
+                      Meeting Billing - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Personal Activity - Completed">
+                      Personal Activity - Completed
+                    </MenuItem>
+                    <MenuItem value="Personal Activity - Not Completed">
+                      Personal Activity - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Note">Note</MenuItem>
+                    <MenuItem value="Mail Received">Mail Received</MenuItem>
+                    <MenuItem value="Mail Sent">Mail Sent</MenuItem>
+                    <MenuItem value="Email Received">Email Received</MenuItem>
+                    <MenuItem value="Courier Sent">Courier Sent</MenuItem>
+                    <MenuItem value="Email Sent">Email Sent</MenuItem>
+                    <MenuItem value="Payment Received">
+                      Payment Received
+                    </MenuItem>
+                    <MenuItem value="Room 1 - Completed">
+                      Room 1 - Completed
+                    </MenuItem>
+                    <MenuItem value="Room 1 - Not Completed">
+                      Room 1 - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Room 2 - Completed">
+                      Room 2 - Completed
+                    </MenuItem>
+                    <MenuItem value="Room 2 - Not Completed">
+                      Room 2 - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Room 3 - Completed">
+                      Room 3 - Completed
+                    </MenuItem>
+                    <MenuItem value="Room 3 - Not Completed">
+                      Room 3 - Not Completed
+                    </MenuItem>
+                    <MenuItem value="To Do Billing - Completed">
+                      To Do Billing - Completed
+                    </MenuItem>
+                    <MenuItem value="To Do Billing - Not Completed">
+                      To Do Billing - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Vacation - Completed">
+                      Vacation - Completed
+                    </MenuItem>
+                    <MenuItem value="Vacation - Not Completed">
+                      Vacation - Not Completed
+                    </MenuItem>
+                    <MenuItem value="Vacation Cancelled">
+                      Vacation Cancelled
+                    </MenuItem>
+                    <MenuItem value="Attachment">Attachment</MenuItem>
+                    <MenuItem value="E-mail Attachment">
+                      E-mail Attachment
+                    </MenuItem>
                   </Select>
                 </FormGroup>
 
