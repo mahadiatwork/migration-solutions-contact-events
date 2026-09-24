@@ -18,7 +18,70 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 import "react-quill/dist/quill.snow.css";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const defaultResultByActivityType = {
+  Meeting: "Meeting Held",
+  "To-Do": "To-do Done",
+  Appointment: "Appointment Completed",
+  Boardroom: "Boardroom - Completed",
+  "Call Billing": "Call Billing - Completed",
+  "Email Billing": "Mail - Completed",
+  "Initial Consultation": "Initial Consultation - Completed",
+  Call: "Call Attempted",
+  Mail: "Mail - Completed",
+  "Meeting Billing": "Meeting Billing - Completed",
+  "Personal Activity": "Personal Activity - Completed",
+  "Room 1": "Room 1 - Completed",
+  "Room 2": "Room 2 - Completed",
+  "Room 3": "Room 3 - Completed",
+  "To Do Billing": "To Do Billing - Completed",
+  Vacation: "Vacation - Completed",
+};
+
+const getDefaultResult = (activityType) =>
+  defaultResultByActivityType[activityType] || "Note";
+
+const formatHistoryDate = (value) => {
+  if (!value) return null;
+
+  const parsedDate = dayjs(value);
+  return parsedDate.isValid()
+    ? parsedDate
+        .tz("Australia/Adelaide")
+        .format("YYYY-MM-DDTHH:mm:ssZ")
+    : null;
+};
+
+const serializeHistoryDuration = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+
+  const normalizedValue = String(value).trim();
+  const hoursMatch = normalizedValue.match(/^(\d+(?:\.\d+)?)\s*hours?$/i);
+  if (hoursMatch) return String(Number(hoursMatch[1]) * 60);
+
+  const minutesMatch = normalizedValue.match(/^(\d+)\s*minutes?$/i);
+  if (minutesMatch) return minutesMatch[1];
+
+  return /^\d+(?:\.\d+)?$/.test(normalizedValue)
+    ? normalizedValue
+    : null;
+};
+
+const requireSuccessfulRecord = (response, action) => {
+  const responseData = response?.data?.[0];
+  if (responseData?.code === "SUCCESS") return responseData;
+
+  throw new Error(
+    `${action} failed${responseData?.message ? `: ${responseData.message}` : "."}`
+  );
+};
 
 export default function ClearActivityModal({
   open,
@@ -39,12 +102,15 @@ export default function ClearActivityModal({
   };
 
   const [duration, setDuration] = React.useState(
-    calculateDuration(selectedRowData?.duration)
+    calculateDuration(
+      selectedRowData?.Duration_Min ?? selectedRowData?.duration
+    )
   );
-  const [result, setResult] = React.useState(selectedRowData?.result);
+  const [result, setResult] = React.useState(selectedRowData?.result || "");
   const [addActivityToHistory, setAddActivityToHistory] = React.useState(false);
   const [clearChecked, setClearChecked] = React.useState(
-    selectedRowData?.Cleared
+    selectedRowData?.Event_Status === "Closed" ||
+      Boolean(selectedRowData?.Cleared)
   );
   const [eraseChecked, setEraseChecked] = React.useState(false);
   const [activityDetails, setActivityDetails] = React.useState(
@@ -58,6 +124,13 @@ export default function ClearActivityModal({
     setClearChecked(event.target.checked);
     if (event.target.checked) {
       setEraseChecked(false);
+      setResult(
+        (currentResult) =>
+          currentResult ||
+          getDefaultResult(
+            selectedRowData?.Type_of_Activity || selectedRowData?.type
+          )
+      );
     }
   };
 
@@ -65,70 +138,124 @@ export default function ClearActivityModal({
     setEraseChecked(event.target.checked);
     if (event.target.checked) {
       setClearChecked(false);
+      setResult(
+        (currentResult) =>
+          currentResult ||
+          getDefaultResult(
+            selectedRowData?.Type_of_Activity || selectedRowData?.type
+          )
+      );
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
+      const participants = Array.isArray(selectedRowData?.Participants)
+        ? selectedRowData.Participants
+        : [];
+      const contactParticipants = participants.filter((participant) => {
+        const participantId = participant?.participant || participant?.id;
+        return Boolean(
+          participantId &&
+            (!participant?.type || participant.type === "contact")
+        );
+      });
+      const activityType =
+        selectedRowData?.Type_of_Activity || selectedRowData?.type || "";
+      const effectiveResult = result || getDefaultResult(activityType);
+      const historyDate = formatHistoryDate(
+        selectedRowData?.Start_DateTime || selectedRowData?.start
+      );
+      const historyDuration = serializeHistoryDuration(
+        selectedRowData?.Duration_Min ?? selectedRowData?.duration
+      );
+      let historyRecordData = null;
+
+      if (addActivityToHistory) {
+        const missingHistoryFields = [];
+        if (!historyDate) missingHistoryFields.push("date");
+        if (!activityType) missingHistoryFields.push("type");
+        if (!effectiveResult) missingHistoryFields.push("result");
+        if (historyDuration === null) missingHistoryFields.push("duration");
+        if (contactParticipants.length === 0) {
+          missingHistoryFields.push("contact participant");
+        }
+
+        if (missingHistoryFields.length > 0) {
+          throw new Error(
+            `History was not created because the event is missing: ${missingHistoryFields.join(
+              ", "
+            )}.`
+          );
+        }
+
+        const stakeholderId = selectedRowData?.What_Id?.id;
+        historyRecordData = {
+          Name:
+            contactParticipants
+              .map((participant) => participant?.name)
+              .filter(Boolean)
+              .join(", ") || selectedRowData?.Event_Title || "Activity",
+          Duration: historyDuration,
+          History_Type: activityType,
+          ...(stakeholderId
+            ? { Stakeholder: { id: stakeholderId } }
+            : {}),
+          Regarding:
+            selectedRowData?.Regarding || selectedRowData?.regarding || "",
+          Date: historyDate,
+          History_Details_Plain: activityDetails || "",
+          History_Result: effectiveResult,
+          Event_ID: selectedRowData?.id,
+        };
+      }
+
       // Helper to create history if required
       const createHistory = async () => {
-        const recordData = {
-          Name:
-            selectedRowData.Participants.length > 0
-              ? selectedRowData.Participants.map((participant) => participant.name).join(", ")
-              : selectedRowData?.Event_Title,
-          Duration: selectedRowData?.Duration_Min,
-          History_Type: selectedRowData?.Type_of_Activity,
-          Stakeholder: { id: selectedRowData?.What_Id?.id },
-          Regarding: selectedRowData?.Regarding,
-          Date: selectedRowData?.Start_DateTime,
-          Owner: selectedRowData?.Owner,
-          History_Details_Plain: activityDetails,
-          History_Result: result,
-        };
-  
         const historyResponse = await ZOHO.CRM.API.insertRecord({
           Entity: "History1",
-          APIData: recordData,
+          APIData: historyRecordData,
           Trigger: ["workflow"],
         });
-  
-        if (historyResponse.data[0].code === "SUCCESS") {
-          setSnackbarMessage(
-            `${clearChecked ? "Event marked as cleared" : "Event erased"} and history created successfully!`
-          );
-          const historyRecordId = historyResponse.data[0].details.id;
-  
-          // Insert Participants for History
-          if (selectedRowData.Participants.length > 0) {
-            const participantInsertPromises = selectedRowData.Participants.filter(
-              (participant) => participant.type === "contact"
-            ).map(async (participant) => {
-              const participantData = {
-                Contact_Details: { id: participant.participant },
-                Contact_History_Info: { id: historyRecordId },
-              };
-  
-              return await ZOHO.CRM.API.insertRecord({
-                Entity: "History_X_Contacts",
-                APIData: participantData,
-                Trigger: ["workflow"],
-              });
-            });
-  
-            await Promise.all(participantInsertPromises);
-          }
-          return true;
-        } else {
-          setSnackbarMessage("History creation failed.");
-          setSnackbarSeverity("warning");
-          setSnackbarOpen(true);
-          return false;
+
+        const historyResult = requireSuccessfulRecord(
+          historyResponse,
+          "History creation"
+        );
+        const historyRecordId = historyResult?.details?.id;
+        if (!historyRecordId) {
+          throw new Error("History creation failed: Zoho returned no record ID.");
         }
+
+        const participantInsertResponses = await Promise.all(
+          contactParticipants.map((participant) =>
+            ZOHO.CRM.API.insertRecord({
+              Entity: "History_X_Contacts",
+              APIData: {
+                Contact_Details: {
+                  id: participant.participant || participant.id,
+                },
+                Contact_History_Info: { id: historyRecordId },
+              },
+              Trigger: ["workflow"],
+            })
+          )
+        );
+
+        participantInsertResponses.forEach((response) => {
+          requireSuccessfulRecord(response, "History contact link creation");
+        });
+
+        setSnackbarMessage(
+          `${clearChecked ? "Event marked as cleared" : "Event erased"} and history created successfully!`
+        );
+        setSnackbarSeverity("success");
+        setSnackbarOpen(true);
+        return true;
       };
-  
+
       if (clearChecked && !eraseChecked) {
         // Update the event to "Closed"
         const updateResponse = await ZOHO.CRM.API.updateRecord({
@@ -137,7 +264,7 @@ export default function ClearActivityModal({
           APIData: {
             id: selectedRowData?.id,
             Event_Status: "Closed",
-            result: result,
+            result: effectiveResult,
           },
         });
   
@@ -150,7 +277,11 @@ export default function ClearActivityModal({
           setEvents((prevEvents) =>
             prevEvents.map((event) =>
               event.id === selectedRowData?.id
-                ? { ...event, Event_Status: "Closed", result: result }
+                ? {
+                    ...event,
+                    Event_Status: "Closed",
+                    result: effectiveResult,
+                  }
                 : event
             )
           );

@@ -397,15 +397,36 @@ export default function ScheduleTable({
     if (row?.id) {
       async function getData() {
         try {
+          const sourceEvent = events.find(
+            (event) => String(event.id) === String(row.id)
+          );
           const response = await ZOHO.CRM.API.getRecord({
             Entity: "Events",
             approved: "both",
             RecordID: row.id,
           });
 
-          if (response && response.data) {
-            setSelectedRowData(response.data[0]);
-          }
+          const detailedEvent = response?.data?.[0];
+          setSelectedRowData({
+            ...(sourceEvent || {}),
+            ...(detailedEvent || {}),
+            Start_DateTime:
+              detailedEvent?.Start_DateTime || sourceEvent?.Start_DateTime,
+            Duration_Min:
+              detailedEvent?.Duration_Min ?? sourceEvent?.Duration_Min,
+            Type_of_Activity:
+              detailedEvent?.Type_of_Activity ||
+              sourceEvent?.Type_of_Activity,
+            Regarding:
+              detailedEvent?.Regarding ?? sourceEvent?.Regarding,
+            Description:
+              detailedEvent?.Description ?? sourceEvent?.Description,
+            Participants:
+              Array.isArray(detailedEvent?.Participants) &&
+              detailedEvent.Participants.length > 0
+                ? detailedEvent.Participants
+                : sourceEvent?.Participants || [],
+          });
           setOpenClearModal(true);
         } catch (error) {
           console.error("Error fetching data:", error);
