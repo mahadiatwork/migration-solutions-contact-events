@@ -48,6 +48,7 @@ export default function ContactField({
   handleInputChange,
   ZOHO,
   selectedRowData,
+  currentContactId,
 }) {
   const [selectedParticipants, setSelectedParticipants] = useState(
     () => getInitialParticipants(formData, selectedRowData)
@@ -81,7 +82,11 @@ export default function ContactField({
 
   useEffect(() => {
     const fetchParticipantsDetails = async () => {
-      const participantsToLoad = selectedRowData?.Participants || [];
+      const participantsToLoad = selectedRowData
+        ? selectedRowData.Participants || []
+        : currentContactId
+          ? [{ participant: currentContactId, type: "contact" }]
+          : [];
 
       if (
         !participantsLoaded &&
@@ -108,6 +113,7 @@ export default function ContactField({
             try {
               const contactDetails = await ZOHO.CRM.API.getRecord({
                 Entity: "Contacts",
+                approved: "both",
                 RecordID: recordId,
               });
 
@@ -158,7 +164,9 @@ export default function ContactField({
     fetchParticipantsDetails();
   }, [
     participantsLoaded,
+    selectedRowData,
     selectedRowData?.Participants,
+    currentContactId,
     ZOHO,
   ]);
 

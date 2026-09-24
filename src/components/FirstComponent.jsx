@@ -111,8 +111,14 @@ const FirstComponent = ({
   ZOHO,
   isEditMode, // New prop to check if it's edit mode
 }) => {
-  const { events, filterDate, setFilterDate, recentColors, setRecentColor } =
-    useContext(ZohoContext);
+  const {
+    events,
+    filterDate,
+    setFilterDate,
+    recentColors,
+    setRecentColor,
+    currentContactId,
+  } = useContext(ZohoContext);
 
   const [activityType] = useState([
     { type: "Meeting", resource: 1 },
@@ -607,6 +613,7 @@ const FirstComponent = ({
             handleInputChange={handleInputChange}
             ZOHO={ZOHO}
             selectedRowData={selectedRowData}
+            currentContactId={currentContactId}
           />
         </Grid>
         <Grid size={12} container columnSpacing={2} alignItems="center">

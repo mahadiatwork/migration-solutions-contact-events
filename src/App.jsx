@@ -23,7 +23,10 @@ function App() {
   useEffect(() => {
 
     ZOHO.embeddedApp.on("PageLoad", async function (data) {
-      setEntityId(data.EntityId)
+      const currentContactId = Array.isArray(data.EntityId)
+        ? data.EntityId[0]
+        : data.EntityId;
+      setEntityId(currentContactId || null)
     })
     // Initialize Zoho Embedded App once
     ZOHO.embeddedApp.init().then(() => {
@@ -143,6 +146,7 @@ function App() {
         setFilterDate,
         recentColors,
         setRecentColor,
+        currentContactId: entityId,
       }}
     >
       {/* Conditionally render the loader or the main content */}
