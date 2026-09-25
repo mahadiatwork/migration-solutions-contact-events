@@ -22,31 +22,10 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import "react-quill/dist/quill.snow.css";
+import { getResultOptions } from "../services/picklistConfigService.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
-const defaultResultByActivityType = {
-  Meeting: "Meeting Held",
-  "To-Do": "To-do Done",
-  Appointment: "Appointment Completed",
-  Boardroom: "Boardroom - Completed",
-  "Call Billing": "Call Billing - Completed",
-  "Email Billing": "Mail - Completed",
-  "Initial Consultation": "Initial Consultation - Completed",
-  Call: "Call Attempted",
-  Mail: "Mail - Completed",
-  "Meeting Billing": "Meeting Billing - Completed",
-  "Personal Activity": "Personal Activity - Completed",
-  "Room 1": "Room 1 - Completed",
-  "Room 2": "Room 2 - Completed",
-  "Room 3": "Room 3 - Completed",
-  "To Do Billing": "To Do Billing - Completed",
-  Vacation: "Vacation - Completed",
-};
-
-const getDefaultResult = (activityType) =>
-  defaultResultByActivityType[activityType] || "Note";
 
 const formatHistoryDate = (value) => {
   if (!value) return null;
@@ -89,19 +68,41 @@ export default function ClearActivityModal({
   selectedRowData,
   ZOHO,
   setEvents,
+  picklistConfig,
 }) {
+  const activityType =
+    selectedRowData?.Type_of_Activity || selectedRowData?.type || "";
+  const resultOptions = getResultOptions(
+    activityType,
+    picklistConfig,
+    selectedRowData?.result,
+    true
+  );
+  const defaultResult = resultOptions[0] || "";
   const calculateDuration = (durationInMinutes) => {
-    if (!durationInMinutes) return "5 minutes";
-    const minutes = parseInt(durationInMinutes, 10);
+    if (
+      durationInMinutes === null ||
+      durationInMinutes === undefined ||
+      durationInMinutes === ""
+    ) return "";
+
+    const serialized = serializeHistoryDuration(durationInMinutes);
+    if (serialized === null) return String(durationInMinutes);
+    const minutes = Number(serialized);
+    if (!Number.isFinite(minutes)) return String(durationInMinutes);
     if (minutes < 60) {
-      return `${minutes} minutes`;
-    } else {
-      const hours = Math.floor(minutes / 60);
-      return `${hours} hour${hours > 1 ? "s" : ""}`;
+      return `${minutes} minute${minutes === 1 ? "" : "s"}`;
     }
+
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    const hourText = `${hours} hour${hours === 1 ? "" : "s"}`;
+    return remainder
+      ? `${hourText} ${remainder} minute${remainder === 1 ? "" : "s"}`
+      : hourText;
   };
 
-  const [duration, setDuration] = React.useState(
+  const [duration] = React.useState(
     calculateDuration(
       selectedRowData?.Duration_Min ?? selectedRowData?.duration
     )
@@ -127,9 +128,7 @@ export default function ClearActivityModal({
       setResult(
         (currentResult) =>
           currentResult ||
-          getDefaultResult(
-            selectedRowData?.Type_of_Activity || selectedRowData?.type
-          )
+          defaultResult
       );
     }
   };
@@ -141,9 +140,7 @@ export default function ClearActivityModal({
       setResult(
         (currentResult) =>
           currentResult ||
-          getDefaultResult(
-            selectedRowData?.Type_of_Activity || selectedRowData?.type
-          )
+          defaultResult
       );
     }
   };
@@ -162,9 +159,7 @@ export default function ClearActivityModal({
             (!participant?.type || participant.type === "contact")
         );
       });
-      const activityType =
-        selectedRowData?.Type_of_Activity || selectedRowData?.type || "";
-      const effectiveResult = result || getDefaultResult(activityType);
+      const effectiveResult = result || defaultResult;
       const historyDate = formatHistoryDate(
         selectedRowData?.Start_DateTime || selectedRowData?.start
       );
@@ -418,19 +413,12 @@ export default function ClearActivityModal({
                   <InputLabel id="duration-label" sx={{ fontWeight: "bold" }}>
                     Duration
                   </InputLabel>
-                  <Select
-                    labelId="duration-label"
+                  <TextField
                     value={duration}
                     size="small"
-                    onChange={(e) => setDuration(e.target.value)}
                     sx={{ minWidth: 150 }}
                     disabled
-                  >
-                    <MenuItem value="5 minutes">5 minutes</MenuItem>
-                    <MenuItem value="30 minutes">30 minutes</MenuItem>
-                    <MenuItem value="1 hour">1 hour</MenuItem>
-                    <MenuItem value="2 hours">2 hours</MenuItem>
-                  </Select>
+                  />
                 </FormGroup>
 
                 <Typography
@@ -471,103 +459,11 @@ export default function ClearActivityModal({
                     sx={{ marginLeft: 2, minWidth: 150 }}
                     size="small"
                   >
-                    <MenuItem value="Call Attempted">Call Attempted</MenuItem>
-                    <MenuItem value="Call Completed">Call Completed</MenuItem>
-                    <MenuItem value="Call Left Message">
-                      Call Left Message
-                    </MenuItem>
-                    <MenuItem value="Call Received">Call Received</MenuItem>
-                    <MenuItem value="Meeting Held">Meeting Held</MenuItem>
-                    <MenuItem value="Meeting Not Held">
-                      Meeting Not Held
-                    </MenuItem>
-                    <MenuItem value="To-do Done">To-do Done</MenuItem>
-                    <MenuItem value="To-do Not Done">To-do Not Done</MenuItem>
-                    <MenuItem value="Appointment Completed">
-                      Appointment Completed
-                    </MenuItem>
-                    <MenuItem value="Appointment Not Completed">
-                      Appointment Not Completed
-                    </MenuItem>
-                    <MenuItem value="Boardroom - Completed">
-                      Boardroom - Completed
-                    </MenuItem>
-                    <MenuItem value="Boardroom - Not Completed">
-                      Boardroom - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Call Billing - Completed">
-                      Call Billing - Completed
-                    </MenuItem>
-                    <MenuItem value="Initial Consultation - Completed">
-                      Initial Consultation - Completed
-                    </MenuItem>
-                    <MenuItem value="Initial Consultation - Not Completed">
-                      Initial Consultation - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Mail - Completed">
-                      Mail - Completed
-                    </MenuItem>
-                    <MenuItem value="Mail - Not Completed">
-                      Mail - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Meeting Billing - Completed">
-                      Meeting Billing - Completed
-                    </MenuItem>
-                    <MenuItem value="Meeting Billing - Not Completed">
-                      Meeting Billing - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Personal Activity - Completed">
-                      Personal Activity - Completed
-                    </MenuItem>
-                    <MenuItem value="Personal Activity - Not Completed">
-                      Personal Activity - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Note">Note</MenuItem>
-                    <MenuItem value="Mail Received">Mail Received</MenuItem>
-                    <MenuItem value="Mail Sent">Mail Sent</MenuItem>
-                    <MenuItem value="Email Received">Email Received</MenuItem>
-                    <MenuItem value="Courier Sent">Courier Sent</MenuItem>
-                    <MenuItem value="Email Sent">Email Sent</MenuItem>
-                    <MenuItem value="Payment Received">
-                      Payment Received
-                    </MenuItem>
-                    <MenuItem value="Room 1 - Completed">
-                      Room 1 - Completed
-                    </MenuItem>
-                    <MenuItem value="Room 1 - Not Completed">
-                      Room 1 - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Room 2 - Completed">
-                      Room 2 - Completed
-                    </MenuItem>
-                    <MenuItem value="Room 2 - Not Completed">
-                      Room 2 - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Room 3 - Completed">
-                      Room 3 - Completed
-                    </MenuItem>
-                    <MenuItem value="Room 3 - Not Completed">
-                      Room 3 - Not Completed
-                    </MenuItem>
-                    <MenuItem value="To Do Billing - Completed">
-                      To Do Billing - Completed
-                    </MenuItem>
-                    <MenuItem value="To Do Billing - Not Completed">
-                      To Do Billing - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Vacation - Completed">
-                      Vacation - Completed
-                    </MenuItem>
-                    <MenuItem value="Vacation - Not Completed">
-                      Vacation - Not Completed
-                    </MenuItem>
-                    <MenuItem value="Vacation Cancelled">
-                      Vacation Cancelled
-                    </MenuItem>
-                    <MenuItem value="Attachment">Attachment</MenuItem>
-                    <MenuItem value="E-mail Attachment">
-                      E-mail Attachment
-                    </MenuItem>
+                    {resultOptions.map((option) => (
+                      <MenuItem key={option} value={option}>
+                        {option}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormGroup>
 

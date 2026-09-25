@@ -23,6 +23,7 @@ import {
 import ClearActivityModal from "./ClearActivityModal";
 import EditActivityModal from "./EditActivityModal";
 import CreateActivityModal from "./CreateActivityModal";
+import { getTypeOptionsFromConfig } from "../services/picklistConfigService.js";
 
 // Function to format dates
 function formatDate(dateString) {
@@ -115,7 +116,9 @@ function createData(event, type) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const duration = event.Duration_Min ? `${event.Duration_Min} minutes` : " - "
+  const hasDuration =
+    event.Duration_Min !== "" && event.Duration_Min != null;
+  const duration = hasDuration ? `${event.Duration_Min} minutes` : " - ";
     // startDateTime && endDateTime
     //   ? `${Math.round((endDateTime - startDateTime) / 60000)} minutes`
     //   : "Unknown duration";
@@ -231,6 +234,7 @@ export default function ScheduleTable({
   setEvents,
   customDateRange,
   setCustomDateRange,
+  picklistConfig,
 }) {
   const [selectedRowIndex, setSelectedRowIndex] = React.useState(null);
   const [highlightedRow, setHighlightedRow] = React.useState(null);
@@ -257,24 +261,7 @@ export default function ScheduleTable({
     { label: "Custom Range", value: "Custom Range" }, // New custom range option
   ];
 
-  const typeOptions = [
-    "Meeting",
-    "To-Do",
-    "Call",
-    "Appointment",
-    "Boardroom",
-    "Call Billing",
-    "Email Billing",
-    "Initial Consultation",
-    "Mail",
-    "Meeting Billing",
-    "Personal Activity",
-    "Room 1",
-    "Room 2",
-    "Room 3",
-    "Todo Billing",
-    "Vacation",
-  ];
+  const typeOptions = getTypeOptionsFromConfig(picklistConfig);
 
   const priorityOptions = ["Low", "Medium", "High"];
 
@@ -303,7 +290,7 @@ export default function ScheduleTable({
 
   const rows = Array.isArray(events)
     ? events.map((event) =>
-        createData(event, event.Type_of_Activity || "Other")
+        createData(event, event.Type_of_Activity || "")
       )
     : [];
 
@@ -792,6 +779,7 @@ export default function ScheduleTable({
           ZOHO={ZOHO}
           users={users}
           setEvents={setEvents}
+          picklistConfig={picklistConfig}
         />
       )}
 
@@ -804,6 +792,7 @@ export default function ScheduleTable({
           users={users}
           updateEvent={updateEvent}
           setEvents={setEvents}
+          picklistConfig={picklistConfig}
         />
       )}
 
@@ -817,6 +806,7 @@ export default function ScheduleTable({
           setEvents={setEvents}
           setSelectedRowIndex={setSelectedRowIndex}
           setHighlightedRow={setHighlightedRow}
+          picklistConfig={picklistConfig}
         />
       )}
 

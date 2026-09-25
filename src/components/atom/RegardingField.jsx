@@ -7,30 +7,60 @@ import {
   TextField,
   Box,
 } from "@mui/material";
+import {
+  getRegardingOptions,
+  isManualOtherEnabled,
+} from "../../services/picklistConfigService.js";
 
-const RegardingField = ({ formData, handleInputChange }) => {
-  const predefinedOptions = [
-    "Hourly Consult $220",
-    "Initial Consultation Fee $165",
-    "No appointments today",
-    "No appointments tonight",
-  ]; // The predefined options
+const RegardingField = ({
+  formData,
+  handleInputChange,
+  selectedRowData,
+  picklistConfig,
+  isEditMode,
+}) => {
+  const existingValue =
+    formData.Regarding ?? selectedRowData?.Regarding ?? "";
+  const predefinedOptions = getRegardingOptions(
+    formData.Type_of_Activity,
+    picklistConfig,
+    existingValue,
+    Boolean(isEditMode && selectedRowData)
+  );
+  const manualOtherEnabled = isManualOtherEnabled(
+    formData.Type_of_Activity,
+    picklistConfig
+  );
+  const displayedOptions = manualOtherEnabled
+    ? predefinedOptions.filter((option) => option !== "Other")
+    : predefinedOptions;
 
-  const [selectedValue, setSelectedValue] = useState(formData.Regarding || "");
+  const [selectedValue, setSelectedValue] = useState(existingValue);
   const [manualInput, setManualInput] = useState("");
 
   useEffect(() => {
-    // Check if the selected value is part of the predefined options
-    if (selectedValue && !predefinedOptions.includes(selectedValue)) {
-      setSelectedValue("Other"); // Set to "Other" if it doesn't match any predefined option
-      setManualInput(formData.Regarding); // Populate manual input with the custom value
+    if (existingValue && predefinedOptions.includes(existingValue)) {
+      setSelectedValue(existingValue);
+      setManualInput("");
+    } else if (existingValue && manualOtherEnabled) {
+      setSelectedValue("Other");
+      setManualInput(existingValue);
+    } else {
+      setSelectedValue("");
+      setManualInput("");
     }
-  }, [selectedValue, formData.Regarding]);
+    // Reinitialize only when the option set changes, not while typing manually.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    formData.Type_of_Activity,
+    selectedRowData?.id,
+    picklistConfig,
+  ]);
 
   const handleSelectChange = (event) => {
     const value = event.target.value;
     setSelectedValue(value);
-    if (value !== "Other") {
+    if (value !== "Other" || !manualOtherEnabled) {
       setManualInput(""); // Clear manual input if predefined option is selected
       handleInputChange("Regarding", value); // Pass the selected value to handleInputChange
     }
@@ -66,12 +96,14 @@ const RegardingField = ({ formData, handleInputChange }) => {
             },
           }}
         >
-          {predefinedOptions.map((option) => (
+          {displayedOptions.map((option) => (
             <MenuItem key={option} value={option}>
               {option}
             </MenuItem>
           ))}
-          <MenuItem value="Other">Other (Manually enter)</MenuItem>
+          {manualOtherEnabled && (
+            <MenuItem value="Other">Other (Manually enter)</MenuItem>
+          )}
         </Select>
       </FormControl>
 

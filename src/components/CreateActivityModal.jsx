@@ -20,6 +20,11 @@ import CloseIcon from "@mui/icons-material/Close";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import {
+  getDurationOptionsFromConfig,
+  getRegardingOptions,
+  getTypeOptionsFromConfig,
+} from "../services/picklistConfigService.js";
 dayjs.extend(utc);  
 dayjs.extend(timezone);
 
@@ -145,6 +150,7 @@ function transformFormSubmission(data, individualParticipant = null) {
       ]
     : transformScheduleWithToParticipants(data.scheduledWith || []);
 
+  const hasDuration = data.Duration_Min !== "" && data.Duration_Min != null;
   let transformedData = {
     ...data,
     Start_DateTime: formatDateWithOffset(data.start),
@@ -160,11 +166,12 @@ function transformFormSubmission(data, individualParticipant = null) {
     What_Id: data.What_Id,
     se_module: "Accounts",
     Participants: participants,
-    Duration_Min: data.Duration_Min ? data.Duration_Min.toString() : "0",
+    ...(hasDuration ? { Duration_Min: String(data.Duration_Min) } : {}),
     Owner: {
       id: data?.scheduleFor?.id,
     },
   };
+  if (!hasDuration) delete transformedData.Duration_Min;
 
   let remindAt = null;
   if (
@@ -236,19 +243,26 @@ const CreateActivityModal = ({
   loggedInUser,
   setEvents,
   setSelectedRowIndex,
-  setHighlightedRow
+  setHighlightedRow,
+  picklistConfig,
 }) => {
   const theme = useTheme();
   const [value, setValue] = useState(0);
+  const typeOptions = getTypeOptionsFromConfig(picklistConfig);
+  const durationOptions = getDurationOptionsFromConfig(picklistConfig);
+  const defaultType = typeOptions[0] || "";
+  const defaultDuration = durationOptions[0] ?? "";
+  const defaultRegarding =
+    getRegardingOptions(defaultType, picklistConfig)[0] || "";
 
   const [formData, setFormData] = useState({
-    Type_of_Activity: "Meeting",
+    Type_of_Activity: defaultType,
     startTime: "",
     endTime: 60,
-    duration: "",
+    duration: defaultDuration,
     What_Id: "",
     Event_Title: "New Meeting",
-    resource: 1,
+    resource: "",
     scheduleFor: loggedInUser || "",
     scheduledWith: [],
     Venue: "",
@@ -259,8 +273,8 @@ const CreateActivityModal = ({
     noEndDate: false,
     Description: "",
     color: "#fff",
-    Regarding: "",
-    Duration_Min: 60,
+    Regarding: defaultRegarding,
+    Duration_Min: defaultDuration,
     Create_Separate_Event_For_Each_Contact: false,
     Reminder_Text: "15 minutes before",
     Send_Invites: false,
@@ -273,19 +287,28 @@ const CreateActivityModal = ({
       Type_of_Activity,
       start, // Use raw formData fields
       end,
-      duration,
+      Duration_Min,
       Event_Title,
       scheduledWith, // scheduledWith instead of Participants
     } = formData;
 
     console.log({formData})
 
-    // Ensure all required fields are not empty or null
+    const configuredDurations = getDurationOptionsFromConfig(picklistConfig);
+    const durationIsConfigured =
+      Duration_Min !== "" &&
+      Duration_Min != null &&
+      configuredDurations.some(
+        (option) => Number(option) === Number(Duration_Min)
+      );
+
+    // A successful custom-module read with no Duration rows intentionally
+    // leaves creation invalid instead of inventing a hard-coded duration.
     return (
       Type_of_Activity &&
       start &&
       end &&
-      duration &&
+      durationIsConfigured &&
       Event_Title &&
       scheduledWith.length > 0
     );
@@ -478,6 +501,7 @@ const CreateActivityModal = ({
           handleInputChange={handleInputChange}
           users={users}
           ZOHO={ZOHO}
+          picklistConfig={picklistConfig}
         />
         <Box display="flex" justifyContent="space-between" mt={2}>
           {/* First button aligned to the left */}

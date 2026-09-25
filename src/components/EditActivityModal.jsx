@@ -128,6 +128,7 @@ function transformFormSubmission(data) {
     ? transformScheduleWithToParticipants(data.scheduledWith)
     : [];
 
+  const hasDuration = data.Duration_Min !== "" && data.Duration_Min != null;
   let transformedData = {
     ...data,
     Start_DateTime: formatDateWithOffset(data.start), // Format `start` to ISO with timezone
@@ -141,11 +142,12 @@ function transformFormSubmission(data) {
 
     // Combine the manually set participants and those from `scheduleWith`
     Participants: participantsFromScheduleWith,
-    Duration_Min: data.Duration_Min.toString(),
+    ...(hasDuration ? { Duration_Min: String(data.Duration_Min) } : {}),
     Owner: {
       id: data?.scheduleFor?.id,
     },
   };
+  if (!hasDuration) delete transformedData.Duration_Min;
 
   let remindAt = null;
   if (
@@ -211,7 +213,8 @@ const EditActivityModal = ({
   selectedRowData,
   ZOHO,
   users,
-  setEvents
+  setEvents,
+  picklistConfig,
 }) => {
   const theme = useTheme();
   const [value, setValue] = useState(0);
@@ -222,7 +225,7 @@ const EditActivityModal = ({
     Type_of_Activity: selectedRowData?.Type_of_Activity || "",
     start: selectedRowData?.Start_DateTime || "",
     end: selectedRowData?.End_DateTime || "",
-    Duration_Min: selectedRowData?.Duration_Min || "60",
+    Duration_Min: selectedRowData?.Duration_Min ?? "",
     What_Id: selectedRowData?.What_Id || "",
     scheduledWith: selectedRowData?.Participants
       ? selectedRowData.Participants
@@ -382,6 +385,7 @@ const handleSubmit = async () => {
           selectedRowData={selectedRowData}
           ZOHO={ZOHO}
           isEditMode={true} // Pass true if it's the EditModal, false otherwise
+          picklistConfig={picklistConfig}
         />
         <Box display="flex" justifyContent="space-between" mt={2}>
           {/* First button aligned to the left */}

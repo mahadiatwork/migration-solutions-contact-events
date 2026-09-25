@@ -23,6 +23,12 @@ import CustomColorPicker from "./atom/CustomColorPicker";
 import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import {
+  getDurationOptionsFromConfig,
+  getRegardingOptions,
+  getTypeOptionsFromConfig,
+  normalizeDurationValue,
+} from "../services/picklistConfigService.js";
 
 const commonTextStyles = {
   fontSize: "9pt",
@@ -110,6 +116,7 @@ const FirstComponent = ({
   selectedRowData,
   ZOHO,
   isEditMode, // New prop to check if it's edit mode
+  picklistConfig,
 }) => {
   const {
     events,
@@ -120,24 +127,24 @@ const FirstComponent = ({
     currentContactId,
   } = useContext(ZohoContext);
 
-  const [activityType] = useState([
-    { type: "Meeting", resource: 1 },
-    { type: "To-Do", resource: 2 },
-    { type: "Appointment", resource: 3 },
-    { type: "Boardroom", resource: 4 },
-    { type: "Call Billing", resource: 5 },
-    { type: "Email Billing", resource: 6 },
-    { type: "Initial Consultation", resource: 7 },
-    { type: "Call", resource: 8 },
-    { type: "Mail", resource: 9 },
-    { type: "Meeting Billing", resource: 10 },
-    { type: "Personal Activity", resource: 11 },
-    { type: "Room 1", resource: 12 },
-    { type: "Room 2", resource: 13 },
-    { type: "Room 3", resource: 14 },
-    { type: "To Do Billing", resource: 15 },
-    { type: "Vacation", resource: 16 },
-  ]);
+  const activityType = getTypeOptionsFromConfig(
+    picklistConfig,
+    selectedRowData?.Type_of_Activity,
+    Boolean(isEditMode && selectedRowData)
+  );
+  const durations = getDurationOptionsFromConfig(
+    picklistConfig,
+    selectedRowData?.Duration_Min ?? selectedRowData?.duration,
+    Boolean(isEditMode && selectedRowData)
+  );
+  const configuredDuration = (value) => {
+    const normalizedValue = normalizeDurationValue(value);
+    return (
+      durations.find(
+        (duration) => Number(duration) === Number(normalizedValue)
+      ) ?? ""
+    );
+  };
 
   function addMinutesToDateTime(formatType, durationInMinutes) {
     // // Create a new Date object using the start time from formData
@@ -176,11 +183,18 @@ const FirstComponent = ({
     const initializeDefaultValues = () => {
       const now = new Date();
       const oneHourLater = new Date(now);
-      oneHourLater.setHours(now.getHours() + 1);
+      const defaultDuration = durations[0] ?? "";
+      const defaultDurationMinutes =
+        defaultDuration === "" ? Number.NaN : Number(defaultDuration);
+      oneHourLater.setMinutes(
+        now.getMinutes() +
+          (Number.isFinite(defaultDurationMinutes) ? defaultDurationMinutes : 60)
+      );
 
       handleInputChange("start", now.toISOString());
       handleInputChange("end", oneHourLater.toISOString());
-      handleInputChange("duration", 60); // Default duration of 60 minutes
+      handleInputChange("duration", defaultDuration);
+      handleInputChange("Duration_Min", defaultDuration);
       setStartValue(dayjs(now));
       setEndValue(dayjs(oneHourLater));
     };
@@ -204,14 +218,13 @@ const FirstComponent = ({
       if (formattedStart && formattedEnd) {
         handleInputChange("start", formattedStart.toISOString());
         handleInputChange("end", formattedEnd.toISOString());
-        const calculatedDuration = calculateDuration(
-          formattedStart,
-          formattedEnd
+        const selectedDuration = configuredDuration(
+          selectedRowData.Duration_Min ??
+            selectedRowData.duration ??
+            ""
         );
-        handleInputChange(
-          "duration",
-          selectedRowData.duration || calculatedDuration
-        );
+        handleInputChange("duration", selectedDuration);
+        handleInputChange("Duration_Min", selectedDuration);
         setStartValue(dayjs(formattedStart));
         setEndValue(dayjs(formattedEnd));
       } else {
@@ -246,7 +259,7 @@ const FirstComponent = ({
     } else {
       initializeSelectedRowData();
     }
-  }, [selectedRowData, users]);
+  }, [selectedRowData, users, picklistConfig]);
 
   const [openStartDatepicker, setOpenStartDatepicker] = useState(false);
   const [openEndDatepicker, setOpenEndDatepicker] = useState(false);
@@ -286,13 +299,11 @@ const FirstComponent = ({
 
   const handleActivityChange = (event) => {
     const selectedType = event.target.value;
-    const selectedActivity = activityType.find(
-      (item) => item.type === selectedType
+    handleInputChange("Type_of_Activity", selectedType);
+    handleInputChange(
+      "Regarding",
+      getRegardingOptions(selectedType, picklistConfig)[0] || ""
     );
-    if (selectedActivity) {
-      handleInputChange("Type_of_Activity", selectedActivity.type);
-      handleInputChange("resource", selectedActivity.resource);
-    }
   };
 
   const handleClick = () => {
@@ -354,21 +365,26 @@ const FirstComponent = ({
       if (isNaN(endDate.getTime()) || endDate <= startDate) {
         endDate = calculateEndDate(startDate, 60);
       }
-      const duration = calculateDuration(startDate, endDate);
+      const duration = configuredDuration(
+        calculateDuration(startDate, endDate)
+      );
 
       handleInputChange("start", formatTime(startDate));
       handleInputChange("end", formatTime(endDate));
       handleInputChange("Duration_Min", duration); // Auto-update duration
+      handleInputChange("duration", duration);
     } else if (field === "end") {
       const startDate = parseDateString(formData.start);
-      const duration = calculateDuration(startDate, value);
+      const duration = configuredDuration(calculateDuration(startDate, value));
       handleInputChange("end", formatTime(value));
       handleInputChange("Duration_Min", duration);
+      handleInputChange("duration", duration);
     } else if (field === "Duration_Min") {
       const startDate = parseDateString(formData.start);
 
       const newEndDate = calculateEndDate(startDate, value);
       handleInputChange("Duration_Min", value);
+      handleInputChange("duration", value);
       handleInputChange("end", formatTime(newEndDate));
     } else {
       handleInputChange(field, value);
@@ -408,8 +424,6 @@ const FirstComponent = ({
     },
   };
 
-  const durations = Array.from({ length: 24 }, (_, i) => (i + 1) * 10);
-
   const [startValue, setStartValue] = useState(dayjs(formData.start));
   const [endValue, setEndValue] = useState(dayjs(formData.end));
 
@@ -426,7 +440,9 @@ const FirstComponent = ({
     handleInputChange("end", e.$d);
     console.log("end", e.value);
     const getDiffInMinutes = getTimeDifference(e.$d);
-    handleInputChange("Duration_Min", getDiffInMinutes);
+    const allowedDuration = configuredDuration(getDiffInMinutes);
+    handleInputChange("Duration_Min", allowedDuration);
+    handleInputChange("duration", allowedDuration);
     console.log({ getDiffInMinutes });
     // if (formData.end ) {
     //   console.log('hello')
@@ -460,9 +476,9 @@ const FirstComponent = ({
               value={formData.Type_of_Activity} // Use formData
               onChange={handleActivityChange}
             >
-              {activityType.map((item, index) => (
-                <MenuItem value={item.type} key={index}>
-                  {item.type}
+              {activityType.map((item) => (
+                <MenuItem value={item} key={item}>
+                  {item}
                 </MenuItem>
               ))}
             </Select>
@@ -492,11 +508,34 @@ const FirstComponent = ({
               disabled={formData.Banner ? true : false}
               slotProps={{ textField: { size: "small", fullWidth: true } }}
               onChange={(e) => {
-                const addedHour = new Date(dayjs(e.$d).add(1, "hour").toDate());
+                const configuredDuration =
+                  formData.Duration_Min === "" ||
+                  formData.Duration_Min === null ||
+                  formData.Duration_Min === undefined
+                    ? Number.NaN
+                    : Number(formData.Duration_Min);
+                const durationMinutes = Number.isFinite(configuredDuration)
+                  ? configuredDuration
+                  : Number(durations[0]);
+                const addedHour = new Date(
+                  dayjs(e.$d)
+                    .add(
+                      Number.isFinite(durationMinutes) ? durationMinutes : 60,
+                      "minute"
+                    )
+                    .toDate()
+                );
                 handleInputChange("start", e.$d);
                 handleInputChange("end", addedHour);
                 setEndValue(dayjs(addedHour));
-                handleInputChange("Duration_Min", 60);
+                handleInputChange(
+                  "Duration_Min",
+                  Number.isFinite(durationMinutes) ? durationMinutes : ""
+                );
+                handleInputChange(
+                  "duration",
+                  Number.isFinite(durationMinutes) ? durationMinutes : ""
+                );
                 console.log(e.$d);
                 console.log(addedHour);
               }}
@@ -549,6 +588,7 @@ const FirstComponent = ({
               InputLabelProps={{ shrink: true }}
               onChange={(e) => {
                 handleInputChange("Duration_Min", e.target.value);
+                handleInputChange("duration", e.target.value);
                 addMinutesToDateTime("Duration_Min", e.target.value);
               }}
               sx={{
@@ -676,6 +716,9 @@ const FirstComponent = ({
           <RegardingField
             formData={formData}
             handleInputChange={handleInputChange}
+            selectedRowData={selectedRowData}
+            picklistConfig={picklistConfig}
+            isEditMode={isEditMode}
           />
         </Grid>
         <Grid size={12}>
