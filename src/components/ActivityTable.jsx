@@ -451,22 +451,52 @@ export default function ScheduleTable({
   return (
     <>
       {/* Filters */}
-      <Grid
-        container
-        spacing={2}
-        style={{
-          marginTop: 20,
-          marginBottom: 20,
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 1.5,
+          px: 1,
+          py: 1,
+          mb: 1,
           position: "sticky",
           top: 0,
           zIndex: 100,
           backgroundColor: "white",
-          overflowY: "hidden",
-          width: "100%",
-          marginLeft: 0,
+          "& .MuiInputBase-root, & .MuiButton-root": {
+            height: 33,
+            fontSize: "9pt",
+          },
+          "& .MuiInputLabel-root, & .MuiFormControlLabel-label": {
+            fontSize: "9pt",
+          },
+          "& .MuiSelect-select": {
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          },
+          "& .MuiButton-root": {
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+          },
+          "& .MuiFormControlLabel-root": {
+            height: 33,
+            margin: 0,
+          },
         }}
       >
-        <Grid item xs={2}>
+        <Box
+          sx={{
+            display: "flex",
+            flex: "1 1 900px",
+            minWidth: "min(100%, 798px)",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 1.5,
+          }}
+        >
+        <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
           <FormControl fullWidth>
             <InputLabel>Date</InputLabel>
             <Select
@@ -482,9 +512,9 @@ export default function ScheduleTable({
               ))}
             </Select>
           </FormControl>
-        </Grid>
+        </Box>
         {/* Other filter controls */}
-        <Grid item xs={2}>
+        <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
           <FormControl fullWidth>
             <InputLabel>Type</InputLabel>
             <Select
@@ -503,8 +533,8 @@ export default function ScheduleTable({
               ))}
             </Select>
           </FormControl>
-        </Grid>
-        <Grid item xs={2}>
+        </Box>
+        <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
           <FormControl fullWidth>
             <InputLabel>Priority</InputLabel>
             <Select
@@ -523,8 +553,8 @@ export default function ScheduleTable({
               ))}
             </Select>
           </FormControl>
-        </Grid>
-        <Grid item xs={1}>
+        </Box>
+        <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
           <FormControl fullWidth>
             <InputLabel>User</InputLabel>
             <Select
@@ -543,9 +573,9 @@ export default function ScheduleTable({
               ))}
             </Select>
           </FormControl>
-        </Grid>
+        </Box>
 
-        <Grid item xs={2} sx={{ display: "flex" }}>
+        <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
           <Button
             variant="outlined"
             fullWidth
@@ -554,20 +584,32 @@ export default function ScheduleTable({
           >
             Clear filter
           </Button>
-        </Grid>
-        <Grid item xs={1} sx={{ display: "flex" }}>
+        </Box>
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            flex: "0 1 330px",
+            minWidth: "min(100%, 260px)",
+            alignItems: "center",
+            gap: 1.5,
+            ml: "auto",
+          }}
+        >
+        <Box sx={{ flex: "0 0 auto", display: "flex", alignItems: "center" }}>
           <FormControlLabel
             control={
               <Checkbox
+                size="small"
                 checked={showCleared} // Bind to state
                 onChange={handleClearedCheckboxChange} // Checkbox change handler
               />
             }
             label="Cleared"
           />
-        </Grid>
+        </Box>
 
-        <Grid item xs={2}>
+        <Box sx={{ flex: "1 1 160px", minWidth: 160 }}>
           <Button
             variant="contained"
             fullWidth
@@ -575,8 +617,9 @@ export default function ScheduleTable({
           >
             Create New Event
           </Button>
-        </Grid>
-      </Grid>
+        </Box>
+        </Box>
+      </Box>
 
       {/* Table */}
       <TableContainer
