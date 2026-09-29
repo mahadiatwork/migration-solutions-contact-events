@@ -497,7 +497,7 @@ export default function ScheduleTable({
           }}
         >
         <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Date</InputLabel>
             <Select
               value={filterDate}
@@ -515,7 +515,7 @@ export default function ScheduleTable({
         </Box>
         {/* Other filter controls */}
         <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Type</InputLabel>
             <Select
               multiple
@@ -535,7 +535,7 @@ export default function ScheduleTable({
           </FormControl>
         </Box>
         <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>Priority</InputLabel>
             <Select
               multiple
@@ -555,7 +555,7 @@ export default function ScheduleTable({
           </FormControl>
         </Box>
         <Box sx={{ flex: "1 1 150px", minWidth: 150 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size="small">
             <InputLabel>User</InputLabel>
             <Select
               multiple
