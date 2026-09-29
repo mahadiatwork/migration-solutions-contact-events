@@ -8,8 +8,10 @@ import {
   Box,
 } from "@mui/material";
 import {
+  CUSTOM_REGARDING_LABEL,
+  CUSTOM_REGARDING_OPTION,
+  getPersistedRegardingValue,
   getRegardingOptions,
-  isManualOtherEnabled,
 } from "../../services/picklistConfigService.js";
 
 const RegardingField = ({
@@ -27,14 +29,6 @@ const RegardingField = ({
     existingValue,
     Boolean(isEditMode && selectedRowData)
   );
-  const manualOtherEnabled = isManualOtherEnabled(
-    formData.Type_of_Activity,
-    picklistConfig
-  );
-  const displayedOptions = manualOtherEnabled
-    ? predefinedOptions.filter((option) => option !== "Other")
-    : predefinedOptions;
-
   const [selectedValue, setSelectedValue] = useState(existingValue);
   const [manualInput, setManualInput] = useState("");
 
@@ -42,8 +36,8 @@ const RegardingField = ({
     if (existingValue && predefinedOptions.includes(existingValue)) {
       setSelectedValue(existingValue);
       setManualInput("");
-    } else if (existingValue && manualOtherEnabled) {
-      setSelectedValue("Other");
+    } else if (existingValue) {
+      setSelectedValue(CUSTOM_REGARDING_OPTION);
       setManualInput(existingValue);
     } else {
       setSelectedValue("");
@@ -60,16 +54,17 @@ const RegardingField = ({
   const handleSelectChange = (event) => {
     const value = event.target.value;
     setSelectedValue(value);
-    if (value !== "Other" || !manualOtherEnabled) {
-      setManualInput(""); // Clear manual input if predefined option is selected
-      handleInputChange("Regarding", value); // Pass the selected value to handleInputChange
-    }
+    setManualInput("");
+    handleInputChange("Regarding", getPersistedRegardingValue(value));
   };
 
   const handleManualInputChange = (event) => {
     const value = event.target.value;
     setManualInput(value);
-    handleInputChange("Regarding", value); // Pass the manual input value to handleInputChange
+    handleInputChange(
+      "Regarding",
+      getPersistedRegardingValue(CUSTOM_REGARDING_OPTION, value)
+    );
   };
 
   return (
@@ -96,18 +91,18 @@ const RegardingField = ({
             },
           }}
         >
-          {displayedOptions.map((option) => (
+          {predefinedOptions.map((option) => (
             <MenuItem key={option} value={option}>
               {option}
             </MenuItem>
           ))}
-          {manualOtherEnabled && (
-            <MenuItem value="Other">Other (Manually enter)</MenuItem>
-          )}
+          <MenuItem value={CUSTOM_REGARDING_OPTION}>
+            {CUSTOM_REGARDING_LABEL}
+          </MenuItem>
         </Select>
       </FormControl>
 
-      {selectedValue === "Other" && (
+      {selectedValue === CUSTOM_REGARDING_OPTION && (
         <TextField
           label="Enter your custom regarding"
           fullWidth

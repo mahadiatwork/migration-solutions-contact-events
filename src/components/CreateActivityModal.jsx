@@ -22,9 +22,8 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import {
   getDurationOptionsFromConfig,
-  getRegardingOptions,
-  getTypeOptionsFromConfig,
 } from "../services/picklistConfigService.js";
+import { getCreateActivityDefaults } from "./createActivityDefaults.js";
 dayjs.extend(utc);  
 dayjs.extend(timezone);
 
@@ -248,20 +247,15 @@ const CreateActivityModal = ({
 }) => {
   const theme = useTheme();
   const [value, setValue] = useState(0);
-  const typeOptions = getTypeOptionsFromConfig(picklistConfig);
-  const durationOptions = getDurationOptionsFromConfig(picklistConfig);
-  const defaultType = typeOptions[0] || "";
-  const defaultDuration = durationOptions[0] ?? "";
-  const defaultRegarding =
-    getRegardingOptions(defaultType, picklistConfig)[0] || "";
+  const createDefaults = getCreateActivityDefaults(picklistConfig);
 
   const [formData, setFormData] = useState({
-    Type_of_Activity: defaultType,
+    Type_of_Activity: createDefaults.Type_of_Activity,
     startTime: "",
     endTime: 60,
-    duration: defaultDuration,
+    duration: createDefaults.duration,
     What_Id: "",
-    Event_Title: "New Meeting",
+    Event_Title: createDefaults.Event_Title,
     resource: "",
     scheduleFor: loggedInUser || "",
     scheduledWith: [],
@@ -273,8 +267,8 @@ const CreateActivityModal = ({
     noEndDate: false,
     Description: "",
     color: "#fff",
-    Regarding: defaultRegarding,
-    Duration_Min: defaultDuration,
+    Regarding: createDefaults.Regarding,
+    Duration_Min: createDefaults.Duration_Min,
     Create_Separate_Event_For_Each_Contact: false,
     Reminder_Text: "15 minutes before",
     Send_Invites: false,

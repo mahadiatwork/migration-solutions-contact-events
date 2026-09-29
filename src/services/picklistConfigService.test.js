@@ -1,20 +1,50 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  CUSTOM_REGARDING_LABEL,
+  CUSTOM_REGARDING_OPTION,
   buildConfigFromReadResult,
   clearPicklistConfigCache,
   fetchPicklistConfig,
   getDurationOptionsFromConfig,
+  getPersistedRegardingValue,
   getRegardingOptions,
   getResultOptions,
   getTypeOptionsFromConfig,
   groupPicklistRecords,
-  isManualOtherEnabled,
 } from "./picklistConfigService.js";
+import {
+  getActivityTypeSelection,
+  getCreateActivityDefaults,
+} from "../components/createActivityDefaults.js";
 
 test.afterEach(() => {
   clearPicklistConfigCache();
   delete globalThis.window;
+});
+
+test("does not use the first CRM picklist rows as create defaults", () => {
+  const defaults = getCreateActivityDefaults({
+    _source: "custom_module",
+    types: ["Fruit"],
+    regarding: { Fruit: ["Pear"] },
+    durations: [5],
+  });
+
+  assert.deepEqual(defaults, {
+    Type_of_Activity: "",
+    Event_Title: "New Activity",
+    Regarding: "",
+    duration: 5,
+    Duration_Min: 5,
+  });
+});
+
+test("clears Regarding when an activity type is explicitly selected", () => {
+  assert.deepEqual(getActivityTypeSelection("Fruit"), {
+    Type_of_Activity: "Fruit",
+    Regarding: "",
+  });
 });
 
 test("falls back only when the module cannot be reached", () => {
@@ -83,7 +113,6 @@ test("custom-module rows are authoritative, including empty categories", () => {
   assert.deepEqual(getResultOptions("Meeting", config), []);
   assert.deepEqual(getRegardingOptions("Meeting", config), []);
   assert.deepEqual(getDurationOptionsFromConfig(config), []);
-  assert.equal(isManualOtherEnabled("Meeting", config), false);
 });
 
 test("uses exact parent, then _default, without merging both", () => {
@@ -107,8 +136,35 @@ test("uses exact parent, then _default, without merging both", () => {
     "Default Regarding",
     "Other",
   ]);
-  assert.equal(isManualOtherEnabled("Exact", config), false);
-  assert.equal(isManualOtherEnabled("Other", config), true);
+});
+
+test("custom Regarding text is always persisted instead of its UI sentinel", () => {
+  assert.equal(getPersistedRegardingValue("Exact Regarding"), "Exact Regarding");
+  assert.equal(getPersistedRegardingValue(CUSTOM_REGARDING_OPTION), "");
+  assert.equal(
+    getPersistedRegardingValue(CUSTOM_REGARDING_OPTION, "My own regarding"),
+    "My own regarding"
+  );
+});
+
+test("filters reserved Custom values without removing configured Other", () => {
+  const config = {
+    _source: "custom_module",
+    regarding: {
+      Meeting: [
+        CUSTOM_REGARDING_LABEL,
+        CUSTOM_REGARDING_OPTION,
+        "Other",
+        "Visa",
+      ],
+    },
+  };
+
+  assert.deepEqual(getRegardingOptions("Meeting", config), ["Other", "Visa"]);
+  assert.deepEqual(
+    getRegardingOptions("Meeting", config, CUSTOM_REGARDING_LABEL, true),
+    ["Other", "Visa"]
+  );
 });
 
 test("preserves unconfigured values only when editing", () => {

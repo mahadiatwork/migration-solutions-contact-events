@@ -337,6 +337,16 @@ export const getResultOptions = (
   );
 };
 
+export const CUSTOM_REGARDING_LABEL = "Custom";
+export const CUSTOM_REGARDING_OPTION = "__custom_regarding__";
+
+export const filterReservedRegardingOptions = (options = []) =>
+  (Array.isArray(options) ? options : []).filter(
+    (option) =>
+      option !== CUSTOM_REGARDING_LABEL &&
+      option !== CUSTOM_REGARDING_OPTION
+  );
+
 export const getRegardingOptions = (
   type,
   config,
@@ -344,16 +354,18 @@ export const getRegardingOptions = (
   isEdit = false
 ) => {
   const options = getParentOptions(configOrFallback(config).regarding, type);
-  return preserveExisting(options, existingValue, isEdit, (left, right) =>
-    String(left) === String(right)
+  return filterReservedRegardingOptions(
+    preserveExisting(options, existingValue, isEdit, (left, right) =>
+      String(left) === String(right)
+    )
   );
 };
 
 export const getDefaultResult = (type, config) =>
   getResultOptions(type, config)[0] || "";
 
-export const isManualOtherEnabled = (type, config) => {
-  const resolvedConfig = configOrFallback(config);
-  if (resolvedConfig._source !== "custom_module") return true;
-  return getParentOptions(resolvedConfig.regarding, type).includes("Other");
-};
+export const getPersistedRegardingValue = (
+  selectedValue,
+  customValue = ""
+) =>
+  selectedValue === CUSTOM_REGARDING_OPTION ? customValue : selectedValue;

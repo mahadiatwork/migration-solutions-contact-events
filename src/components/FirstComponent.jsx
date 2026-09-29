@@ -25,10 +25,10 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import {
   getDurationOptionsFromConfig,
-  getRegardingOptions,
   getTypeOptionsFromConfig,
   normalizeDurationValue,
 } from "../services/picklistConfigService.js";
+import { getActivityTypeSelection } from "./createActivityDefaults.js";
 
 const commonTextStyles = {
   fontSize: "9pt",
@@ -298,12 +298,9 @@ const FirstComponent = ({
   };
 
   const handleActivityChange = (event) => {
-    const selectedType = event.target.value;
-    handleInputChange("Type_of_Activity", selectedType);
-    handleInputChange(
-      "Regarding",
-      getRegardingOptions(selectedType, picklistConfig)[0] || ""
-    );
+    const selection = getActivityTypeSelection(event.target.value);
+    handleInputChange("Type_of_Activity", selection.Type_of_Activity);
+    handleInputChange("Regarding", selection.Regarding);
   };
 
   const handleClick = () => {
