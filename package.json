@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test src/services/picklistConfigService.test.js",
+    "test": "node --test src/services/picklistConfigService.test.js src/utils/dateTime.test.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -17,45 +17,19 @@ import FirstComponent from "./FirstComponent";
 import SecondComponent from "./SecondComponent";
 import ThirdComponent from "./ThirdComponent";
 import CloseIcon from "@mui/icons-material/Close";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import {
   getDurationOptionsFromConfig,
 } from "../services/picklistConfigService.js";
 import { getCreateActivityDefaults } from "./createActivityDefaults.js";
-dayjs.extend(utc);  
-dayjs.extend(timezone);
-
-
-// Helper function to format date with timezone offset
-function formatDateForRemindAt(date) {
-  if (!date) return null;
-
-  // Helper function to pad numbers with leading zeros
-  const pad = (num) => String(num).padStart(2, "0");
-
-  // Extract date and time components
-  const formattedYear = date.getFullYear();
-  const formattedMonth = pad(date.getMonth() + 1);
-  const formattedDay = pad(date.getDate());
-  const formattedHours = pad(date.getHours());
-  const formattedMinutes = pad(date.getMinutes());
-  const formattedSeconds = pad(date.getSeconds());
-
-  // Get timezone offset
-  const timezoneOffset = -date.getTimezoneOffset();
-  const offsetSign = timezoneOffset >= 0 ? "+" : "-";
-  const offsetHours = pad(Math.floor(Math.abs(timezoneOffset) / 60));
-  const offsetMinutes = pad(Math.abs(timezoneOffset) % 60);
-
-  // Return formatted date string with timezone offset
-  return `${formattedYear}-${formattedMonth}-${formattedDay}T${formattedHours}:${formattedMinutes}:${formattedSeconds}${offsetSign}${offsetHours}:${offsetMinutes}`;
-}
+import {
+  formatDateTimeForCrm,
+  parseCrmDateTime,
+} from "../utils/dateTime.js";
 
 // Function to calculate Remind_At based on Reminder_Text
 function calculateRemindAt(reminderText, startDateTime) {
-  const startDate = new Date(startDateTime);
+  const startDate = parseCrmDateTime(startDateTime)?.toDate();
+  if (!startDate) return null;
   // Calculate the amount of time to subtract based on Reminder_Text
   switch (reminderText) {
     case "At time of meeting":
@@ -92,36 +66,7 @@ function calculateRemindAt(reminderText, startDateTime) {
       return null; // No reminder
   }
   // Format the updated date back into the required ISO string format
-  return formatDateForRemindAt(startDate);
-}
-
-function formatDateWithOffset(dateString) {
-  console.log({ dateString });
-  if (!dateString) return null;
-
-  // Parse the date string using JavaScript's Date constructor
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return null;
-
-  // Helper function to pad numbers with leading zeros
-  const pad = (num) => String(num).padStart(2, "0");
-
-  // Extract date and time components
-  const formattedYear = date.getFullYear();
-  const formattedMonth = pad(date.getMonth() + 1);
-  const formattedDay = pad(date.getDate());
-  const formattedHours = pad(date.getHours());
-  const formattedMinutes = pad(date.getMinutes());
-  const formattedSeconds = pad(date.getSeconds());
-
-  // Get timezone offset
-  const timezoneOffset = -date.getTimezoneOffset();
-  const offsetSign = timezoneOffset >= 0 ? "+" : "-";
-  const offsetHours = pad(Math.floor(Math.abs(timezoneOffset) / 60));
-  const offsetMinutes = pad(Math.abs(timezoneOffset) % 60);
-
-  // Return formatted date string with timezone offset
-  return `${formattedYear}-${formattedMonth}-${formattedDay}T${formattedHours}:${formattedMinutes}:${formattedSeconds}${offsetSign}${offsetHours}:${offsetMinutes}`;
+  return formatDateTimeForCrm(startDate);
 }
 
 
@@ -152,8 +97,8 @@ function transformFormSubmission(data, individualParticipant = null) {
   const hasDuration = data.Duration_Min !== "" && data.Duration_Min != null;
   let transformedData = {
     ...data,
-    Start_DateTime: formatDateWithOffset(data.start),
-    End_DateTime: formatDateWithOffset(data.end),
+    Start_DateTime: formatDateTimeForCrm(data.start),
+    End_DateTime: formatDateTimeForCrm(data.end),
     Description: data.Description || "",
     Event_Priority: data.priority || "",
 
@@ -180,7 +125,7 @@ function transformFormSubmission(data, individualParticipant = null) {
   ) {
     remindAt = calculateRemindAt(
       data?.Reminder_Text,
-      formatDateWithOffset(data.start)
+      formatDateTimeForCrm(data.start)
     );
     transformedData["Remind_At"] = remindAt;
   } else {

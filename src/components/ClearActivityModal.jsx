@@ -18,24 +18,12 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
 import "react-quill/dist/quill.snow.css";
 import { getResultOptions } from "../services/picklistConfigService.js";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { formatDateTimeForCrm } from "../utils/dateTime.js";
 
 const formatHistoryDate = (value) => {
-  if (!value) return null;
-
-  const parsedDate = dayjs(value);
-  return parsedDate.isValid()
-    ? parsedDate
-        .tz("Australia/Adelaide")
-        .format("YYYY-MM-DDTHH:mm:ssZ")
-    : null;
+  return formatDateTimeForCrm(value);
 };
 
 const serializeHistoryDuration = (value) => {

@@ -16,6 +16,7 @@ function App() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true); // Add loading state
   const [filterDate, setFilterDate] = useState("All");
+  const [customDateRange, setCustomDateRange] = useState(null);
   const [cache, setCache] = useState({}); // Cache to store fetched results
   const [recentColors, setRecentColor] = useState(""); // Move this to context
   const [loggedInUser, setLoggedInUser] = useState(null);
@@ -183,6 +184,8 @@ function App() {
           users={users}
           filterDate={filterDate}
           setFilterDate={setFilterDate}
+          customDateRange={customDateRange}
+          setCustomDateRange={setCustomDateRange}
           recentColors={recentColors}
           setRecentColor={setRecentColor}
           loggedInUser={loggedInUser}

@@ -29,6 +29,7 @@ import {
   normalizeDurationValue,
 } from "../services/picklistConfigService.js";
 import { getActivityTypeSelection } from "./createActivityDefaults.js";
+import { getDeviceTimezone } from "../utils/dateTime.js";
 
 const commonTextStyles = {
   fontSize: "9pt",
@@ -118,6 +119,7 @@ const FirstComponent = ({
   isEditMode, // New prop to check if it's edit mode
   picklistConfig,
 }) => {
+  const deviceTimezone = getDeviceTimezone();
   const {
     events,
     filterDate,
@@ -502,8 +504,15 @@ const FirstComponent = ({
             <DateTimePicker
               label="Start Time"
               value={startValue}
+              timezone="system"
               disabled={formData.Banner ? true : false}
-              slotProps={{ textField: { size: "small", fullWidth: true } }}
+              slotProps={{
+                textField: {
+                  size: "small",
+                  fullWidth: true,
+                  helperText: `Timezone: ${deviceTimezone}`,
+                },
+              }}
               onChange={(e) => {
                 const configuredDuration =
                   formData.Duration_Min === "" ||
@@ -558,8 +567,15 @@ const FirstComponent = ({
             <DateTimePicker
               label="End Time"
               value={endValue}
+              timezone="system"
               disabled={formData.Banner ? true : false}
-              slotProps={{ textField: { size: "small", fullWidth: true } }}
+              slotProps={{
+                textField: {
+                  size: "small",
+                  fullWidth: true,
+                  helperText: `Timezone: ${deviceTimezone}`,
+                },
+              }}
               onChange={(e) => handleEndDateChange(e)}
               sx={{ width: "100%", "& input": { py: 0 } }}
               renderInput={(params) => <TextField {...params} size="small" />}

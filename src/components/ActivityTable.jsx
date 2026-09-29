@@ -24,15 +24,11 @@ import ClearActivityModal from "./ClearActivityModal";
 import EditActivityModal from "./EditActivityModal";
 import CreateActivityModal from "./CreateActivityModal";
 import { getTypeOptionsFromConfig } from "../services/picklistConfigService.js";
-
-// Function to format dates
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
+import {
+  getActivityDateParts,
+  isDateKeyInRange,
+  parseCrmDateTime,
+} from "../utils/dateTime.js";
 
 // Custom TableCell component for conditional styling
 const CustomTableCell = ({
@@ -106,22 +102,18 @@ const CustomTableCell = ({
 // }
 
 function createData(event, type) {
-  const startDateTime = event.Start_DateTime
-    ? new Date(event.Start_DateTime)
-    : new Date();
-  const endDateTime = event.End_DateTime
-    ? new Date(event.End_DateTime)
-    : new Date();
-  const time = startDateTime.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const startDateTime = parseCrmDateTime(event.Start_DateTime);
+  const endDateTime = parseCrmDateTime(event.End_DateTime);
+  const { dateLabel, dateKey, timeLabel, timestamp } = getActivityDateParts(
+    event.Start_DateTime
+  );
   const hasDuration =
     event.Duration_Min !== "" && event.Duration_Min != null;
-  const duration = hasDuration ? `${event.Duration_Min} minutes` : " - ";
-    // startDateTime && endDateTime
-    //   ? `${Math.round((endDateTime - startDateTime) / 60000)} minutes`
-    //   : "Unknown duration";
+  const duration = hasDuration
+    ? `${event.Duration_Min} minutes`
+    : startDateTime && endDateTime
+      ? `${endDateTime.diff(startDateTime, "minute")} minutes`
+      : " - ";
 
   // ScheduledFor field handling
   const scheduledFor =
@@ -145,8 +137,10 @@ function createData(event, type) {
   return {
     title,
     type,
-    date: startDateTime.toLocaleDateString(),
-    time,
+    date: dateLabel,
+    dateKey,
+    startTimestamp: timestamp,
+    time: timeLabel,
     priority: event.Event_Priority || "Low",
     scheduledFor,
     participants,
@@ -307,15 +301,26 @@ export default function ScheduleTable({
           filterUser.some((user) => row.scheduledFor.includes(user));
         const dateMatch =
           !customDateRange ||
-          (new Date(row.date) >= new Date(customDateRange.startDate) &&
-            new Date(row.date) <= new Date(customDateRange.endDate));
+          isDateKeyInRange(
+            row.dateKey,
+            customDateRange.startDate,
+            customDateRange.endDate
+          );
         const clearedMatch = showCleared || row.Event_Status !== "Closed";
 
         return (
           typeMatch && priorityMatch && userMatch && dateMatch && clearedMatch
         );
       })
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
+      .sort((a, b) => {
+        const aTimestamp = Number.isFinite(a.startTimestamp)
+          ? a.startTimestamp
+          : Number.NEGATIVE_INFINITY;
+        const bTimestamp = Number.isFinite(b.startTimestamp)
+          ? b.startTimestamp
+          : Number.NEGATIVE_INFINITY;
+        return bTimestamp - aTimestamp;
+      });
   }, [
     events,
     rows,
@@ -336,6 +341,8 @@ export default function ScheduleTable({
     setFilterDate(value);
     if (value === "Custom Range") {
       setOpenCustomRangeModal(true);
+    } else {
+      setCustomDateRange(null);
     }
   };
 
@@ -733,7 +740,7 @@ export default function ScheduleTable({
                     row={row}
                     highlightedRow={highlightedRow}
                   >
-                    {formatDate(row.date)}
+                    {row.date}
                   </CustomTableCell>
                   <CustomTableCell
                     selectedRowIndex={selectedRowIndex}
