@@ -100,6 +100,44 @@ test("groups all four picklists and accepts History field aliases", () => {
   assert.deepEqual(config.durations, [45]);
 });
 
+for (const [category, getOptions] of [
+  ["History Type", (config) => getTypeOptionsFromConfig(config)],
+  ["History Result", (config) => getResultOptions("Fruit", config)],
+  ["Regarding", (config) => getRegardingOptions("Fruit", config)],
+  ["Duration", (config) => getDurationOptionsFromConfig(config)],
+]) {
+  test(`keeps numeric priority order and puts unranked ${category} values last`, () => {
+    const rows = [
+      { Name: "90", Sort_Order: null },
+      { Name: "80", Sort_Order: "" },
+      { Name: "70", Sort_Order: "   " },
+      { Name: "60", Sort_Order: "invalid" },
+      { Name: "50" },
+      { Name: "40", Sort_Order: 10000 },
+      { Name: "30", Sort_Order: "10" },
+      { Name: "20", Sort_Order: { actual_value: "9" } },
+      { Name: "10", Sort_Order: { display_value: 0 } },
+    ].map((row) => ({ ...row, Category: category, Parent_Type: "Fruit" }));
+
+    const config = groupPicklistRecords(rows);
+    const expected = ["10", "20", "30", "40", "90", "80", "70", "60", "50"];
+    assert.deepEqual(
+      getOptions(config),
+      category === "Duration" ? expected.map(Number) : expected
+    );
+  });
+}
+
+test("uses Sort_Order as a numeric priority, not a one-based position", () => {
+  const config = groupPicklistRecords([
+    { Name: "Meeting", Category: "Type", Sort_Order: 10 },
+    { Name: "Fruit", Category: "Type", Sort_Order: "9" },
+    { Name: "Other", Category: "Type", Sort_Order: 5 },
+  ]);
+
+  assert.deepEqual(getTypeOptionsFromConfig(config), ["Other", "Fruit", "Meeting"]);
+});
+
 test("custom-module rows are authoritative, including empty categories", () => {
   const config = {
     _source: "custom_module",
